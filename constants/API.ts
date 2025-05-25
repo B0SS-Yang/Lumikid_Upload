@@ -1,0 +1,1 @@
+export const API_URL = "https://cs46-3-backend-asf7abasg6b8e6g0.australiaeast-01.azurewebsites.net"; // 请替换为你的实际 IP 地址

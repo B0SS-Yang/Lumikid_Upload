@@ -1,0 +1,122 @@
+[
+    {
+        "id": "book_001",
+        "title": "Zibu & Zizo",
+        "author": "Andrag Versfeld Nsibande",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/zibu-and-zizo_andrag-versfeld-nsibande.pdf",
+        "db_id": "f146edeb-58be-4ff6-a609-a0dace071d92",
+        "description": "This depicts a pair of twins who look alike but have distinct interests, conveying that \"differences are beautiful.\""
+    },
+    {
+        "id": "book_002",
+        "title": "What's Next?",
+        "author": "Beech Botha Williams",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/whats-next_beech-botha-williams.pdf",
+        "db_id": "8f0e188f-ec17-41eb-b2a8-4bb1b9eee3da",
+        "description": "This portrays energetic Fatima and her loving Grandpa as they embrace playful adventures and everyday moments with joy, capturing the spirit of curiosity in every new day."
+    },
+    {
+        "id": "book_003",
+        "title": "The Box",
+        "author": "Retief Smith Kliphuis",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/the-box_retief-smith-kliphuis.pdf",
+        "db_id": "8d9e7735-a3b5-49d5-976c-cc0b19bade45",
+        "description": "This imaginative tale transforms a simple box into a portal for creative play, encouraging children to see ordinary objects in extraordinary ways."
+    },
+    {
+        "id": "book_004",
+        "title": "Tikky! Boom! Tish!",
+        "author": "Wilson Kriel Puren",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/tikky-boom-tish_wilson-kriel-puren.pdf",
+        "db_id": "66422cd7-089e-41db-9cc2-84fb2773c663",
+        "description": "This book invites children into a vibrant world of rhythm and sound, where playful onomatopoeia sparks joyful movement and interactive fun."
+    },
+    {
+        "id": "book_005",
+        "title": "Senzo & the Sun",
+        "author": "Le Roux Longland McGregor",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/senzo-and-the-sun_le-roux_longland_mcgregor.pdf",
+        "db_id": "c9c55b01-76eb-4598-bf9e-c21e751c79d1",
+        "description": "This engaging story follows a curious boy's day, blending vivid sound effects and simple routines into an exploration of everyday wonders."
+    },
+    {
+        "id": "book_006",
+        "title": "Alex's Super Medicine",
+        "author": "Jenkins Rex Van Der Merwe",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/alexs-super-medicine_jenkins-rex-van-der-merwe.pdf",
+        "db_id": "8c1bb601-f67e-4a8e-ad7b-ab680bc8a1e1",
+        "description": "This book presents a young boy’s humorous adventure in overcoming his dislike for medicine through creative, unexpected tactics."
+    },
+    {
+        "id": "book_007",
+        "title": "How do you Sleep?",
+        "author": "Demertzis Awerbuck Latimer",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/how-do-you-sleep_demertzis-awerbuck-latimer.pdf",
+        "db_id": "866dac59-86b3-43cc-b98b-0f0a963b8755",
+        "description": "This playful tale explores the quirky ways different animals sleep, inviting children to mimic each unique style."
+    },
+    {
+        "id": "book_008",
+        "title": "Joanna’s Grannies",
+        "author": "Garisch Bolland Campbell",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/joannas-grannies_garisch-bolland-campbell.pdf",
+        "db_id": "23c1a61b-a250-4522-b40d-6090672883b4",
+        "description": "This story celebrates the warmth of having two very different but equally loving grandmothers."
+    },
+    {
+        "id": "book_009",
+        "title": "Let's Be Friends!",
+        "author": "Hunter Bosman Combrinck",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/lets-be-friends_hunter-bosman-combrinck.pdf",
+        "db_id": "245f918a-937c-4b92-9d88-a249f039855d",
+        "description": "This engaging narrative follows the ups and downs of making new friends through playful interactions and encouraging persistence."
+    },
+    {
+        "id": "book_010",
+        "title": "Look Up!",
+        "author": "Nel Thorpe",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/look-up_nel-thorpe.pdf",
+        "db_id": "87f7ad81-ad76-40d0-8cdb-b171fb31f34c",
+        "description": "This book invites children to explore the wonders above, sparking curiosity about the natural world in a simple, vivid way."
+    },
+    {
+        "id": "book_011",
+        "title": "Meerkat Magic",
+        "author": "Kuijers Cleghorn Shongwe",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/meerkat-magic_kuijers-cleghorn-shongwe.pdf",
+        "db_id": "899f6ae5-8af7-478f-8de3-c609c29c3dc5",
+        "description": "This lively tale captures the fun and adventure of meerkats as they explore, run, and climb together."
+    },
+    {
+        "id": "book_012",
+        "title": "Sam's Treasures",
+        "author": "Jon Keevy",
+        "age_range": "3-7",
+        "pageCount": 18,
+        "pdf_url": "https://kwozlmehyeygmvprtzps.supabase.co/storage/v1/object/public/books/sams-treasures_keevy-kabeya-jansen-van-vuuren.pdf",
+        "db_id": "831182d4-9520-4216-9aa9-9d1cd3091e89",
+        "description": "This enchanting story recounts a park adventure where Sam discovers unexpected treasures, blending whimsy with heartfelt discovery."
+    }
+]
