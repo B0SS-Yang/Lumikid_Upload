@@ -1,13 +1,41 @@
-import { View, StyleSheet, Image, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Image, Text, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { defaultStyles } from '@/constants/Styles';
 import Colors from '@/constants/Colors';
+import * as WebBrowser from 'expo-web-browser';
+import { API_URL } from '@/constants/API';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as AuthSession from 'expo-auth-session';
+import { openAuthSessionAsync } from 'expo-web-browser';
 
 const Page = () => {
   const { bottom } = useSafeAreaInsets();
   const router = useRouter();
+
+  const redirectUri = AuthSession.makeRedirectUri();
+  console.log('【DEBUG】redirectUri:', redirectUri);
+
+  const handleGoogleLogin = async () => {
+    console.log('【DEBUG】handleGoogleLogin redirectUri:', redirectUri);
+    const authUrl = `${API_URL}/auth/google_login?redirect_uri=${encodeURIComponent(redirectUri)}`;
+    console.log('【DEBUG】authUrl:', authUrl);
+    const result = await openAuthSessionAsync(authUrl, redirectUri);
+    if (result.type === 'success' && result.url) {
+      const match = result.url.match(/access_token=([^&]+)/);
+      if (match) {
+        const token = match[1];
+        await AsyncStorage.setItem('token', token);
+        router.replace('/');
+      } else {
+        Alert.alert('登录失败', '未获取到token');
+      }
+    } else {
+      Alert.alert('登录失败', '未获取到token');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Image
@@ -17,7 +45,7 @@ const Page = () => {
         accessibilityLabel="LumiKid Logo"
       />
       <View style={[styles.bottomSheet, { paddingBottom: bottom +25 }]}>  
-        <TouchableOpacity style={[defaultStyles.btn, styles.btnDark]}>
+        <TouchableOpacity style={[defaultStyles.btn, styles.btnDark]} onPress={handleGoogleLogin}>
           <Ionicons name="logo-google" size={16} style={styles.btnIcon} color={'#fff'} />
           <Text style={styles.btnDarkText}>Continue with Google</Text>
         </TouchableOpacity>

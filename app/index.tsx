@@ -37,18 +37,14 @@ export default function ChatPage() {
   const [inGame, setInGame] = useState(false);
   const [isParentMode, setIsParentMode] = useState(false);
   const params = useLocalSearchParams();
-  // 预留所有小游戏参数
-  const grammarQuestion = params.grammarQuestion ? decodeURIComponent(params.grammarQuestion as string) : '';
-  const grammarAnswer = params.grammarAnswer ? decodeURIComponent(params.grammarAnswer as string) : '';
-  const gameType = params.gameType ? params.gameType as string : (grammarQuestion ? 'grammar' : '');
-  // 预留其他小游戏参数
-  // const mathQuestion = params.mathQuestion ? decodeURIComponent(params.mathQuestion as string) : '';
-  // const mathAnswer = params.mathAnswer ? decodeURIComponent(params.mathAnswer as string) : '';
+  const gameType = params.gameType as string;
+  const gameQuestion = params.gameQuestion ? decodeURIComponent(params.gameQuestion as string) : '';
+  const gameAnswer = params.gameAnswer ? decodeURIComponent(params.gameAnswer as string) : '';
 
   // 小游戏答题相关state
-  const [gameActive, setGameActive] = useState(!!grammarQuestion);
+  const [gameActive, setGameActive] = useState(!!gameQuestion);
   const [currentGame, setCurrentGame] = useState(gameType); // 记录当前小游戏类型
-  const [currentGameAnswer, setCurrentGameAnswer] = useState(grammarAnswer);
+  const [currentGameAnswer, setCurrentGameAnswer] = useState(gameAnswer);
 
   // 新增：是否等待继续/退出小游戏
   const [waitingContinue, setWaitingContinue] = useState(false);
@@ -182,10 +178,22 @@ export default function ChatPage() {
   
   // 新增：首次加载时将题目插入AI消息，并保存答案
   useEffect(() => {
-    setCurrentGameAnswer(grammarAnswer);
+    setCurrentGameAnswer(gameAnswer);
     // 输出初始题目和答案
-    console.log('🎮 First game parameters:', { grammarQuestion, grammarAnswer });
-  }, [grammarQuestion, grammarAnswer, gameActive]);
+    console.log('🎮 First game parameters:', { gameQuestion, gameAnswer });
+  }, [gameQuestion, gameAnswer, gameActive]);
+
+  useEffect(() => {
+    if (gameQuestion && gameType) {
+      setMessages(prev => [
+        ...prev,
+        { id: Date.now().toString() + '_game', text: gameQuestion, role: 'assistant' as 'assistant' }
+      ]);
+      setCurrentGame(gameType);
+      setCurrentGameAnswer(gameAnswer);
+      setGameActive(true);
+    }
+  }, [gameQuestion, gameType]);
 
   const handleSend = async () => {
     if (!inputText.trim()) return;
@@ -297,6 +305,24 @@ export default function ChatPage() {
         },
       ]);
       return;
+    }
+
+    if (gameActive && currentGame === 'math') {
+      // 判断数字
+      if (inputText.trim() === currentGameAnswer.trim()) {
+        // 正确
+      } else {
+        // 错误
+      }
+    }
+
+    if (gameActive && currentGame === 'vocabulary') {
+      // 判断单词
+      if (inputText.trim().toLowerCase() === currentGameAnswer.trim().toLowerCase()) {
+        // 正确
+      } else {
+        // 错误
+      }
     }
 
     // 请求体日志

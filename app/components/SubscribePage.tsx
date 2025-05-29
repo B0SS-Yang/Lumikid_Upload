@@ -10,10 +10,13 @@ import {
   Image,
   Alert,
   Animated,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '@/constants/API';
 
 const { width } = Dimensions.get('window');
 
@@ -75,9 +78,56 @@ export default function SubscribePage() {
     setSelectedPlan(plan);
   };
 
-  const handleSubscribe = () => {
-    // TODO: 实现订阅逻辑
-    Alert.alert('Subscription successful', `You have successfully subscribed to the ${selectedPlan.title} plan`);
+  const handleSubscribe = async () => {
+    try {
+      // 1. 获取 token
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', '请先登录');
+        return;
+      }
+
+      // 2. 组装请求体
+      const requestBody = {
+        token,
+        plan: 'Pro',
+        duration: selectedPlan.id, // 'monthly' | 'quarterly' | 'yearly'
+        auto_renew: isAutoRenew,
+        renew_method: 'credit_card',
+      };
+
+      // 输出请求体和请求url
+      console.log('【DEBUG】订阅请求:');
+      console.log('请求URL:', `${API_URL}/payment/purchase`);
+      console.log('请求体:', JSON.stringify(requestBody));
+
+      // 3. 调用后端API
+      const response = await fetch(`${API_URL}/payment/purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const data = await response.json();
+
+      // 输出后端返回体
+      console.log('【DEBUG】后端返回:', data);
+
+      if (response.ok && data.checkout_url) {
+        Alert.alert('即将跳转', '请在新页面完成支付', [
+          {
+            text: '确定',
+            onPress: () => Linking.openURL(data.checkout_url),
+          },
+        ]);
+      } else {
+        Alert.alert('订阅失败', data.detail || '请稍后重试');
+      }
+    } catch (err) {
+      Alert.alert('订阅失败', err instanceof Error ? err.message : '请稍后重试');
+    }
   };
 
   const renderDots = () => {

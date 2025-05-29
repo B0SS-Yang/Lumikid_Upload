@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '@/constants/API';
+import * as FileSystem from 'expo-file-system';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +29,44 @@ const features: Feature[] = [
   { id: 'library', name: 'Digital Library' },
   { id: 'modules', name: 'Education Modules' },
 ];
+
+const fetchAndSaveAllChatHistory = async (userId: string) => {
+  try {
+    console.log('fetchAndSaveAllChatHistory 被调用，userId:', userId);
+    const chatListUrl = `${API_URL}/chats?user_id=${userId}`;
+    console.log('【DEBUG】获取聊天列表请求:');
+    console.log('请求URL:', chatListUrl);
+    console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
+    const chatListRes = await fetch(chatListUrl, {
+      headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
+    });
+    console.log('响应状态:', chatListRes.status);
+    const chatList = await chatListRes.json();
+    console.log('响应体:', chatList);
+
+    const dirUri = FileSystem.documentDirectory + 'ChatHistory/';
+    await FileSystem.makeDirectoryAsync(dirUri, { intermediates: true });
+
+    for (const chat of chatList) {
+      const chatId = chat.id;
+      const chatHistoryUrl = `${API_URL}/chathistory/${chatId}`;
+      console.log('【DEBUG】获取聊天历史请求:');
+      console.log('请求URL:', chatHistoryUrl);
+      console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
+      const chatHistoryRes = await fetch(chatHistoryUrl, {
+        headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
+      });
+      console.log('响应状态:', chatHistoryRes.status);
+      const chatHistory = await chatHistoryRes.json();
+      console.log('响应体:', chatHistory);
+      const fileUri = `${dirUri}chat_${chatId}.json`;
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(chatHistory, null, 2));
+    }
+    console.log('所有聊天历史已保存到本地 ChatHistory 文件夹');
+  } catch (err) {
+    console.error('拉取或保存聊天历史失败:', err);
+  }
+};
 
 export default function FeaturePage() {
   const router = useRouter();
@@ -46,6 +85,14 @@ export default function FeaturePage() {
       setUserId(parseInt(stored, 10));
     })();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (userId) {
+        await fetchAndSaveAllChatHistory(userId.toString());
+      }
+    })();
+  }, [userId]);
 
   // ——— 2. 确认 AI Chatting / Digital Library 弹窗 ———
   const [confirmingFeature, setConfirmingFeature] = useState<Feature | null>(null);
@@ -167,60 +214,40 @@ export default function FeaturePage() {
   };
 
   // ——— 5. 启动小游戏：指向 /game/:type 而非 /chat ———
-  const startGame = async (
-    type: 'math' | 'vocabulary' | 'grammar' | 'image_spelling'
-  ) => {
-    if (userId === null) return;
-
+  const startGame = async (type: 'math' | 'vocabulary' | 'grammar') => {
+    if (!userId) return;
     try {
-      if (type === 'grammar') {
-        const res = await fetch(`${API_URL}/game/grammar`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': 'cs46_learning_companion_secure_key_2024',
-          },
-          body: JSON.stringify({ user_id: userId, chat_id: chatId }),
-        });
-        if (!res.ok) throw new Error('Failed to start grammar game');
-        const data = await res.json();
-        // data 可能是字符串数组或对象，需解析出Question和Answer
-        let question = '';
-        let answer = '';
-        if (Array.isArray(data)) {
-          // 兼容旧格式 [question, answer]
-          question = data[0];
-          answer = data[1];
-        } else if (typeof data === 'object' && data.Question && data.Answer) {
-          question = data.Question;
-          answer = data.Answer;
-        }
-        // 跳转到首页并传递题目信息
-        router.push({
-          pathname: '/',
-          params: {
-            grammarQuestion: encodeURIComponent(question),
-            grammarAnswer: encodeURIComponent(answer),
-            chatId: chatId?.toString() || '',
-          },
-        });
-        return;
-      }
       const res = await fetch(`${API_URL}/game/${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': 'cs46_learning_companion_secure_key_2024',
         },
-        body: JSON.stringify({ user_id: userId, chat_id: chatId }),
+        body: JSON.stringify({ user_id: userId }),
       });
-      if (!res.ok) throw new Error(`Failed to start ${type} game`);
+      if (!res.ok) throw new Error('Failed to start game');
       const data = await res.json();
-      Alert.alert('Game Started', JSON.stringify(data));
-      router.push(`/?id=${chatId}`);
+      let question = '';
+      let answer = '';
+      if (Array.isArray(data)) {
+        question = data[0];
+        answer = data[1];
+      } else if (typeof data === 'object' && data.Question && data.Answer) {
+        question = data.Question;
+        answer = data.Answer;
+      }
+      // 跳转到首页并传递题目信息
+      router.push({
+        pathname: '/',
+        params: {
+          gameType: type,
+          gameQuestion: encodeURIComponent(question),
+          gameAnswer: encodeURIComponent(answer),
+          chatId: chatId?.toString() || '',
+        },
+      });
     } catch (err) {
-      console.error(err);
-      Alert.alert('Error', `Unable to start ${type} game`);
+      Alert.alert('启动失败', err instanceof Error ? err.message : '未知错误');
     } finally {
       setGameModalVisible(false);
     }
@@ -318,12 +345,6 @@ export default function FeaturePage() {
                       onPress={() => startGame('grammar')}
                     >
                       <Text style={styles.gameButtonText}>Grammar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.gameButton}
-                      onPress={() => startGame('image_spelling')}
-                    >
-                      <Text style={styles.gameButtonText}>Image Spelling</Text>
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity 

@@ -4,27 +4,28 @@ import Colors from '@/constants/Colors';
 import { defaultStyles } from '@/constants/Styles';
 import { useState } from 'react';
 import { API_URL } from '@/constants/API';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleResetPassword = async () => {
+  const handleSendResetCode = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert('错误', '请输入邮箱地址');
       return;
     }
 
     try {
       setIsLoading(true);
-      const requestUrl = `${API_URL}/auth/reset-password`;
+      const requestUrl = `${API_URL}/auth/send_reset_code`;
       const requestData = { email };
-      
-      console.log('\n=== Reset Password Request Information ===');
-      console.log('Request URL:', requestUrl);
-      console.log('Request Method: POST');
-      console.log('Request Body:', JSON.stringify(requestData, null, 2));
+
+      // 输出请求体和请求url
+      console.log('【DEBUG】发送重置验证码请求:');
+      console.log('请求URL:', requestUrl);
+      console.log('请求体:', JSON.stringify(requestData));
 
       const response = await fetch(requestUrl, {
         method: 'POST',
@@ -34,27 +35,34 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify(requestData),
       });
 
+      // 输出响应状态
+      console.log('响应状态:', response.status);
       const responseData = await response.json();
-      
+      // 输出响应体
+      console.log('响应体:', responseData);
+
       if (!response.ok) {
-        throw new Error(responseData.detail || 'Failed to send reset email');
+        throw new Error(responseData.detail || '验证码发送失败');
       }
 
+      // 保存邮箱到本地，后续页面用
+      await AsyncStorage.setItem('pendingVerificationEmail', email);
+
       Alert.alert(
-        'Success',
-        'Password reset instructions have been sent to your email',
+        '成功',
+        '验证码已发送到您的邮箱，请查收',
         [
           {
-            text: 'OK',
-            onPress: () => router.back()
+            text: '确定',
+            onPress: () => router.replace('/LoginPages/VerifyResetPassword')
           }
         ]
       );
     } catch (error) {
       if (error instanceof Error) {
-        Alert.alert('Error', error.message);
+        Alert.alert('错误', error.message);
       } else {
-        Alert.alert('Error', 'Failed to send reset email, please try again later');
+        Alert.alert('错误', '验证码发送失败，请稍后重试');
       }
     } finally {
       setIsLoading(false);
@@ -82,7 +90,7 @@ export default function ForgotPasswordPage() {
       
       <TouchableOpacity 
         style={[defaultStyles.btn, styles.resetButton, isLoading && styles.disabledButton]}
-        onPress={handleResetPassword}
+        onPress={handleSendResetCode}
         disabled={isLoading}>
         <Text style={styles.resetButtonText}>
           {isLoading ? 'Sending...' : 'Send Reset Instructions'}
@@ -93,6 +101,12 @@ export default function ForgotPasswordPage() {
         style={styles.backLink}
         onPress={() => router.back()}>
         <Text style={styles.backLinkText}>Back to Login</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.backLink}
+        onPress={() => router.push('/LoginPages/ResetPasswordPage')}>
+        <Text style={styles.backLinkText}>skip to Reset Password</Text>
       </TouchableOpacity>
     </View>
   );

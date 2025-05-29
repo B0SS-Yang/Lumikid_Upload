@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router';
 import Colors from '@/constants/Colors';
 import { defaultStyles } from '@/constants/Styles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { API_URL } from '@/constants/API';
 import SliderCaptcha, { SliderCaptchaRef } from '../components/SliderCaptcha';
+import * as FileSystem from 'expo-file-system';
 
 interface UserCredentials {
   email: string;
@@ -109,9 +110,19 @@ export default function LoginPage() {
                      responseData.userId || 
                      responseData.user?.id; // 默认值
 
+      if (!userId) {
+        console.error('userId 为空，无法拉取聊天历史');
+        return;
+      }
+
       await AsyncStorage.setItem('user_id', userId.toString());
       
-      // 创建新的聊天会话
+      // 拉取并保存所有聊天历史
+      console.log('准备调用 fetchAndSaveAllChatHistory');
+      await fetchAndSaveAllChatHistory(userId);
+      console.log('fetchAndSaveAllChatHistory 调用结束');
+      
+      // 2. 创建新的聊天会话
       try {
         // 调试日志：创建聊天会话请求信息
         console.log('\n=== 创建聊天会话请求信息 ===');
@@ -149,7 +160,10 @@ export default function LoginPage() {
         if (chatData && chatData.id) {
           await AsyncStorage.setItem('lastChatId', chatData.id.toString());
           console.log('✅ 成功创建聊天会话，ID:', chatData.id);
-          // 跳转到聊天界面
+          // 先全部 await 完成，再跳转
+          await fetchAndSaveAllChatHistory(userId);
+          // ...创建聊天会话...
+          // ...await 完成后再 router.replace(...)
           router.replace(`/?id=${chatData.id}`);
         } else {
           throw new Error('创建聊天会话失败');
@@ -206,6 +220,56 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const fetchAndSaveAllChatHistory = async (userId: string) => {
+    try {
+      console.log('fetchAndSaveAllChatHistory 被调用，userId:', userId);
+      // 1. 获取所有聊天列表
+      const chatListUrl = `${API_URL}/chats?user_id=${userId}`;
+      console.log('【DEBUG】获取聊天列表请求:');
+      console.log('请求URL:', chatListUrl);
+      console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
+      const chatListRes = await fetch(chatListUrl, {
+        headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
+      });
+      console.log('响应状态:', chatListRes.status);
+      const chatList = await chatListRes.json();
+      console.log('响应体:', chatList);
+
+      // 2. 确保ChatHistory文件夹存在
+      const dirUri = FileSystem.documentDirectory + 'ChatHistory/';
+      await FileSystem.makeDirectoryAsync(dirUri, { intermediates: true });
+
+      // 3. 遍历每个聊天，拉取历史并保存
+      for (const chat of chatList) {
+        const chatId = chat.id;
+        const chatHistoryUrl = `${API_URL}/chathistory/${chatId}`;
+        console.log('【DEBUG】获取聊天历史请求:');
+        console.log('请求URL:', chatHistoryUrl);
+        console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
+        const chatHistoryRes = await fetch(chatHistoryUrl, {
+          headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
+        });
+        console.log('响应状态:', chatHistoryRes.status);
+        const chatHistory = await chatHistoryRes.json();
+        console.log('响应体:', chatHistory);
+        const fileUri = `${dirUri}chat_${chatId}.json`;
+        await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(chatHistory, null, 2));
+      }
+      console.log('所有聊天历史已保存到本地 ChatHistory 文件夹');
+    } catch (err) {
+      console.error('拉取或保存聊天历史失败:', err);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const userId = await AsyncStorage.getItem('user_id');
+      if (userId) {
+        await fetchAndSaveAllChatHistory(userId);
+      }
+    })();
+  }, []);
 
   return (
     <View style={styles.container}>

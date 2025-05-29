@@ -80,40 +80,14 @@ const EmailVerificationScreen = () => {
       console.log('Verification response:', data);
 
       if (response.ok) {
-        // 验证成功，进行登录
-        const loginResponse = await fetch(`${API_URL}/auth/login`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password: await AsyncStorage.getItem('pendingPassword'),
-          }),
-        });
-
-        const loginData = await loginResponse.json();
-        console.log('Login response:', loginData);
-
-        if (loginResponse.ok) {
-          await AsyncStorage.multiRemove(['pendingVerificationEmail', 'pendingPassword']);
-          await AsyncStorage.setItem('token', loginData.access_token);
-          await AsyncStorage.setItem('isLoggedIn', 'true');
-          await AsyncStorage.setItem('lastChatId', '01');
-          await AsyncStorage.setItem('selectedRole', 'child');
-          await AsyncStorage.setItem('isParentMode', 'false');
-          router.replace('/');
-        } else if (loginResponse.status === 401) {
-          // 如果是 401 状态码，跳转到验证页面
-          await AsyncStorage.setItem('pendingVerificationEmail', email);
-          router.replace('/LoginPages/VerifyCodePage');
-        } else {
-          setError(loginData.detail || 'Login failed, please try again');
-        }
+        // 保存验证码到 AsyncStorage
+        await AsyncStorage.setItem('verificationCode', enteredCode);
+        // 跳转到重置密码页面
+        router.replace('/LoginPages/ResetPasswordPage');
       } else if (response.status === 401) {
         // 如果是 401 状态码，跳转到验证页面
         await AsyncStorage.setItem('pendingVerificationEmail', email);
-        router.replace('/LoginPages/VerifyCodePage');
+        router.replace('/LoginPages/VerifyResetPassword');
       } else {
         setError(data.detail || 'Verification code error, please try again');
       }
