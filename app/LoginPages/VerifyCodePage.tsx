@@ -80,14 +80,25 @@ const EmailVerificationScreen = () => {
       console.log('Verification response:', data);
 
       if (response.ok) {
-        // 保存验证码到 AsyncStorage
+        // Save verification code to AsyncStorage
         await AsyncStorage.setItem('verificationCode', enteredCode);
-        // 跳转到重置密码页面
-        router.replace('/LoginPages/ResetPasswordPage');
-      } else if (response.status === 401) {
-        // 如果是 401 状态码，跳转到验证页面
-        await AsyncStorage.setItem('pendingVerificationEmail', email);
-        router.replace('/LoginPages/VerifyResetPassword');
+        
+        // Show success alert and then redirect
+        Alert.alert(
+          'Success',
+          'Verification successful! Your account has been activated. Please proceed to login.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Clear the verification code input
+                setCode(Array(CODE_LENGTH).fill(''));
+                // Redirect to login page
+                router.replace('/LoginPages/LoginPage');
+              }
+            }
+          ]
+        );
       } else {
         setError(data.detail || 'Verification code error, please try again');
       }
@@ -122,10 +133,6 @@ const EmailVerificationScreen = () => {
           setError('');
           setTimer(60);
           Alert.alert('Success', 'A new verification code has been sent to your email');
-        } else if (response.status === 401) {
-          // 如果是 401 状态码，跳转到验证页面
-          await AsyncStorage.setItem('pendingVerificationEmail', email);
-          router.replace('/LoginPages/VerifyCodePage');
         } else {
           setError(data.detail || 'Resend failed, please try again');
         }

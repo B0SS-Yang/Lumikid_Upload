@@ -45,14 +45,28 @@ export default function TutorialPage() {
       id: 1,
       question: 'What is your name?',
       key: 'user_name',
-      validate: (value: string) => value.length > 0,
+      validate: (value: string) => {
+        if (!value.trim()) {
+          return { isValid: false, message: 'Please enter your name' };
+        }
+        return { isValid: true };
+      },
       keyboardType: 'default' as KeyboardTypeOptions,
     },
     {
       id: 2,
       question: 'What is your age?',
       key: 'user_age',
-      validate: (value: string) => !isNaN(Number(value)) && Number(value) > 0,
+      validate: (value: string) => {
+        const age = Number(value);
+        if (isNaN(age)) {
+          return { isValid: false, message: 'Please enter a valid number' };
+        }
+        if (age < 0 || age > 100) {
+          return { isValid: false, message: 'Age must be between 0 and 100' };
+        }
+        return { isValid: true };
+      },
       keyboardType: 'numeric' as KeyboardTypeOptions,
     },
     {
@@ -61,76 +75,106 @@ export default function TutorialPage() {
       key: 'user_gender',
       validate: (value: string) => {
         const normalizedValue = value.toLowerCase();
-        return ['male', 'female', 'boy', 'girl'].includes(normalizedValue) ||
-               ['Male', 'Female', 'Boy', 'Girl'].includes(value);
+        const validGenders = ['male', 'female', 'boy', 'girl', 'man', 'woman'];
+        if (!validGenders.includes(normalizedValue)) {
+          return { 
+            isValid: false, 
+            message: 'Please answer with either "boy", "girl", "male", "woman", or "woman'
+          };
+        }
+        return { isValid: true };
       },
       keyboardType: 'default' as KeyboardTypeOptions,
     },
   ];
 
+  // Helper function to convert gender input to backend format
+  const convertGenderToBackendFormat = (gender: string): string => {
+    const normalizedGender = gender.toLowerCase();
+    if (normalizedGender === 'boy' || normalizedGender === 'male' || normalizedGender === 'man') {
+      return 'Male';
+    } else if (normalizedGender === 'girl' || normalizedGender === 'female' || normalizedGender === 'woman') {
+      return 'Female';
+    }
+    return 'Unset';
+  };
+
   const sendUserDataToBackend = async (userData: UserData) => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      // First try to get the temporary token
+      const tempToken = await AsyncStorage.getItem('temp_token');
       const userName = await AsyncStorage.getItem('user_name');
+      const storedGender = await AsyncStorage.getItem('user_gender');
       
-      if (!token) {
-        throw new Error('No token found');
+      console.log('Sending user data:', { userName, ...userData });
+
+      if (!tempToken) {
+        console.error('No token found for user data update');
+        return;
       }
 
-      // 构建完整的用户数据
+      // Build complete user data
       const completeUserData = {
-        name: userName,
-        age: userData.age,
-        gender: userData.gender
+        name: userName || '',
+        age: userData.age || 0,
+        gender: convertGenderToBackendFormat(storedGender || userData.gender || 'Unset')
       };
+
+      console.log('Sending to backend:', completeUserData);
+
+      const requestBody = {
+        token: tempToken,
+        user_data: completeUserData
+      };
+
+      console.log('Complete request body:', requestBody);
 
       const response = await fetch(`${API_URL}/auth/update_profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': 'cs46_learning_companion_secure_key_2024',
+          'Authorization': `Bearer ${tempToken}`
         },
-        body: JSON.stringify({
-          token: token,
-          user_data: completeUserData
-        }),
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update profile');
+        console.error('Backend error:', errorData);
+        // Don't throw error, just log it and continue
+        console.warn('Failed to update profile, but continuing with local save');
+      } else {
+        const data = await response.json();
+        console.log('Profile updated successfully:', data);
+        
+        // After successful update, move the token to permanent storage
+        await AsyncStorage.setItem('token', tempToken);
+        await AsyncStorage.removeItem('temp_token');
       }
 
-      const data = await response.json();
-      console.log('Profile updated successfully:', data);
-
-      // 保存用户信息到本地存储以供后续使用
-      await AsyncStorage.setItem('user_name', userName || '');
-      await AsyncStorage.setItem('user_age', userData.age.toString());
-      await AsyncStorage.setItem('user_gender', userData.gender);
+      // Save user info locally regardless of backend success
+      await AsyncStorage.setItem('user_name', completeUserData.name);
+      await AsyncStorage.setItem('user_age', completeUserData.age.toString());
+      await AsyncStorage.setItem('user_gender', completeUserData.gender);
 
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'Failed to update profile. Please try again later.'
-      );
+      // Log error but don't block the flow
+      console.error('Error in sendUserDataToBackend:', error);
+      // Continue with the flow even if backend update fails
     }
   };
 
   const handleSubmit = async () => {
-    // Build complete user data
-    const userData = {
-      name: questions[0].validate(inputText) ? inputText : '',
-      age: questions[1].validate(inputText) ? Number(inputText) : 0,
-      gender: questions[2].validate(inputText) ? inputText : 'Female'
-    };
-
-    // Save user info to local storage for later use
     try {
-      await AsyncStorage.setItem('user_name', userData.name);
-      await AsyncStorage.setItem('user_age', userData.age.toString());
-      await AsyncStorage.setItem('user_gender', userData.gender);
+      // Validate input based on current step
+      const currentQuestion = questions[step];
+      const validationResult = currentQuestion.validate(inputText);
+      
+      if (!validationResult.isValid) {
+        Alert.alert('Invalid Input', validationResult.message || 'Please check your input');
+        return;
+      }
 
       // Add user message
       const newMessage = {
@@ -140,16 +184,30 @@ export default function TutorialPage() {
       };
       setMessages(prev => [...prev, newMessage]);
 
-      // Save current answer
-      setInputText('');
-
-      // Validate input
-      if (!inputText.trim()) {
-        Alert.alert('Error', 'Please enter your answer');
-        return;
+      // Save current answer based on step
+      if (step === 0) {
+        await AsyncStorage.setItem('user_name', inputText);
+      } else if (step === 1) {
+        const age = Number(inputText);
+        if (age < 0 || age > 100) {
+          Alert.alert('Invalid Age', 'Age must be between 0 and 100');
+          return;
+        }
+        await AsyncStorage.setItem('user_age', inputText);
+      } else if (step === 2) {
+        const normalizedGender = inputText.toLowerCase();
+        const validGenders = ['male', 'female', 'boy', 'girl'];
+        if (!validGenders.includes(normalizedGender)) {
+          Alert.alert('Invalid Gender', 'Please answer with either "boy", "girl", "male", or "female"');
+          return;
+        }
+        const formattedGender = convertGenderToBackendFormat(inputText);
+        await AsyncStorage.setItem('user_gender', formattedGender);
       }
 
-      // Move to next question
+      setInputText('');
+
+      // Move to next question or finish
       if (step < questions.length - 1) {
         setStep(step + 1);
         const nextQuestion: Message = {
@@ -161,29 +219,48 @@ export default function TutorialPage() {
           setMessages(prev => [...prev, nextQuestion]);
         }, 500);
       } else {
-        // Complete all questions, collect data and send to backend
-        await sendUserDataToBackend(userData);
+        // Get all stored user data
+        const storedName = await AsyncStorage.getItem('user_name') || '';
+        const storedAge = await AsyncStorage.getItem('user_age') || '0';
+        const storedGender = await AsyncStorage.getItem('user_gender') || 'Unset';
 
+        // Additional validation before sending to backend
+        const age = parseInt(storedAge, 10);
+        if (isNaN(age) || age < 0 || age > 100) {
+          Alert.alert('Error', 'Invalid age detected. Please start over.');
+          return;
+        }
+
+        // Prepare final user data
+        const finalUserData: UserData = {
+          age: age,
+          gender: storedGender
+        };
+
+        // Send data to backend but don't wait for it
+        sendUserDataToBackend(finalUserData).catch(console.error);
+
+        // Show final message
         const finalMessage: Message = {
           id: Date.now().toString() + '_final',
-          text: `Great to meet you${userData.name ? ', ' + userData.name : ''}! Now let's set up a PIN to secure your account!`,
+          text: `Great to meet you${storedName ? ', ' + storedName : ''}! Now let's set up a PIN to secure your account!`,
           isUser: false,
         };
         setMessages(prev => [...prev, finalMessage]);
         
-        // Delay redirect to PIN setting page
+        // Delay navigation for 3 seconds
         setTimeout(() => {
           router.push('/LoginPages/PinSettingPage');
-        }, 2000);
+        }, 3000);
       }
     } catch (error) {
-      console.error('Error saving user info:', error);
-      Alert.alert('Error', 'Failed to save user information');
+      console.error('Error in handleSubmit:', error);
+      Alert.alert('Error', 'Something went wrong, please try again');
     }
   };
 
   const handleSkip = () => {
-    router.push('/');
+    router.push('/LoginPages/PinSettingPage');
   };
 
   const renderItem = ({ item }: { item: Message }) => (

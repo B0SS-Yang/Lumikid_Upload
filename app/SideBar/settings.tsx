@@ -191,7 +191,7 @@ export default function SettingsPage() {
   );
 }
 
-// 可复用设置项组件
+// Reusable setting item component
 function SettingItem({ label, value }: { label: string; value?: string }) {
   return (
     <View style={styles.item}>

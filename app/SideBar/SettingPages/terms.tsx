@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 
 export default function TermsPage() {
@@ -7,18 +7,18 @@ export default function TermsPage() {
 
   return (
     <View style={styles.container}>
-      {/* 顶部返回+标题 */}
+      {/* Top bar with back button and title */}
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.backArrow}>←</Text>
-        </Pressable>
-        <Text style={styles.title}>Terms of service</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.backButton}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>Terms of Service</Text>
       </View>
 
-      {/* 可滚动内容 */}
-      <ScrollView contentContainerStyle={styles.content}>
+      {/* Scrollable content */}
+      <ScrollView style={styles.content}>
         <Text style={styles.text}>
-          Here’s a Terms of Service (ToS) document for your AI early childhood education companion app:
+          Here's a Terms of Service (ToS) document for your AI early childhood education companion app:
         </Text>
         <Text style={styles.text}>Effective Date: YYYY-MM-DD</Text>
         <Text style={styles.text}>Last Updated: YYYY-MM-DD</Text>
@@ -38,7 +38,7 @@ export default function TermsPage() {
         </Text>
         <Text style={styles.bullet}>• Use the Service for any illegal or harmful purposes.</Text>
         <Text style={styles.bullet}>• Interfere with or disrupt the functionality of the Service.</Text>
-        <Text style={styles.bullet}>• Access other users’ accounts or data without permission.</Text>
+        <Text style={styles.bullet}>• Access other users' accounts or data without permission.</Text>
         <Text style={styles.bullet}>• Distribute malware or harmful software.</Text>
 
         <Text style={styles.sectionTitle}>3. User Accounts and Security</Text>
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  backArrow: {
+  backButton: {
     fontSize: 24,
     marginRight: 16,
   },

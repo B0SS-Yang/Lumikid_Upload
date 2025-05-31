@@ -83,21 +83,17 @@ export default function RegisterPage() {
       // 获取响应数据
       const data = await response.json();
       console.log('Success Response Data:', JSON.stringify(data, null, 2));
-      setMessage("Registration successful! Your access token is: " + data.access_token);
-      await AsyncStorage.setItem('token', data.access_token);
-      await AsyncStorage.setItem('isLoggedIn', 'true');
-      await AsyncStorage.setItem('lastChatId', '01');
       
-      // 检查用户验证状态
+      // Check user verification status
       if (data.status === 'unverified') {
         Alert.alert('Success', 'Registration successful! Please verify your email.', [
           {
             text: 'OK',
             onPress: async () => {
               try {
-                // 保存邮箱到 AsyncStorage，供验证页面使用
+                // Save email for verification page
                 await AsyncStorage.setItem('pendingVerificationEmail', email);
-                // 修改跳转路径，确保正确跳转到验证页面
+                // Navigate to verification page
                 router.replace('/LoginPages/VerifyCodePage');
               } catch (error) {
                 console.error('Error saving email:', error);
@@ -107,12 +103,12 @@ export default function RegisterPage() {
           }
         ]);
       } else {
-        // 如果已经验证，直接跳转到主页
-        Alert.alert('Success', 'Registration successful!', [
+        // If already verified (unusual case), go to login
+        Alert.alert('Success', 'Registration successful! Please login to continue.', [
           {
             text: 'OK',
             onPress: () => {
-              router.replace('/');
+              router.replace('/LoginPages/LoginPage');
             }
           }
         ]);

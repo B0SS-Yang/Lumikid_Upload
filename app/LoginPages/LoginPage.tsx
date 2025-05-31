@@ -40,14 +40,13 @@ export default function LoginPage() {
       const requestUrl = `${API_URL}/auth/login`;
       const requestData = { email, password };
       
-      // 调试日志：登录请求信息
-      console.log('\n=== 登录请求信息 ===');
-      console.log('请求URL:', requestUrl);
-      console.log('请求方法:', 'POST');
-      console.log('请求头:', {
+      console.log('\n=== Login Request Info ===');
+      console.log('Request URL:', requestUrl);
+      console.log('Request Method:', 'POST');
+      console.log('Request Headers:', {
         'Content-Type': 'application/json'
       });
-      console.log('请求体:', JSON.stringify(requestData, null, 2));
+      console.log('Request Body:', JSON.stringify(requestData, null, 2));
       console.log('==================\n');
       
       const response = await fetch(requestUrl, {
@@ -58,30 +57,25 @@ export default function LoginPage() {
         body: JSON.stringify(requestData),
       });
 
-      // 调试日志：登录响应信息
-      console.log('\n=== 登录响应信息 ===');
-      console.log('状态码:', response.status);
-      console.log('状态文本:', response.statusText);
-      console.log('响应头:', Object.fromEntries(response.headers.entries()));
+      console.log('\n=== Login Response Info ===');
+      console.log('Status Code:', response.status);
+      console.log('Status Text:', response.statusText);
+      console.log('Response Headers:', Object.fromEntries(response.headers.entries()));
       const responseData = await response.json();
-      console.log('登录响应数据:', responseData);
+      console.log('Login Response Data:', responseData);
       console.log('==================\n');
       
       if (!response.ok) {
         if (responseData.detail && (responseData.detail.includes('not verified') || responseData.detail.includes('未激活'))) {
-          Alert.alert('提示', '您的账户未激活，请验证邮箱。', [
+          Alert.alert('Notice', 'Your account is not activated, please verify your email.', [
             {
-              text: '确定',
+              text: 'OK',
               onPress: async () => {
-                // 保存邮箱到 AsyncStorage
                 await AsyncStorage.setItem('pendingVerificationEmail', email);
-                // 保存密码到 AsyncStorage
                 await AsyncStorage.setItem('pendingPassword', password);
-                // 重置表单
                 setEmail('');
                 setPassword('');
                 resetVerification();
-                // 直接跳转到验证页面
                 router.replace('/LoginPages/VerifyCodePage');
               }
             }
@@ -89,102 +83,57 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
-        throw new Error(responseData.detail || '登录失败');
+        throw new Error(responseData.detail || 'Login failed');
       }
 
       if (!responseData) {
-        console.error('响应数据为空');
-        throw new Error('登录响应数据无效');
+        console.error('Response data is empty');
+        throw new Error('Invalid login response data');
       }
 
-      // 保存登录状态和token
+      // Save auth data
       await AsyncStorage.setItem('token', responseData.access_token);
       await AsyncStorage.setItem('isLoggedIn', 'true');
-      // 登录后强制设置为幼儿模式
-      await AsyncStorage.setItem('selectedRole', 'child');
-      await AsyncStorage.setItem('isParentMode', 'false');
+      await AsyncStorage.setItem('email', email);
       
-      // 检查所有可能的 user_id 字段
-      const userId = responseData.user_id || 
-                     responseData.userId || 
-                     responseData.user?.id; // 默认值
+      // Check if this is first login
+      if (responseData.first_login === false) {
+        // Existing user - proceed to main app
+        const userId = responseData.user_id || 
+                      responseData.userId || 
+                      responseData.user?.id;
 
-      if (!userId) {
-        console.error('userId 为空，无法拉取聊天历史');
-        return;
-      }
-
-      await AsyncStorage.setItem('user_id', userId.toString());
-      
-      // 拉取并保存所有聊天历史
-      console.log('准备调用 fetchAndSaveAllChatHistory');
-      await fetchAndSaveAllChatHistory(userId);
-      console.log('fetchAndSaveAllChatHistory 调用结束');
-      
-      // 2. 创建新的聊天会话
-      try {
-        // 调试日志：创建聊天会话请求信息
-        console.log('\n=== 创建聊天会话请求信息 ===');
-        console.log('请求URL:', `${API_URL}/chats/create`);
-        console.log('请求方法:', 'POST');
-        console.log('请求头:', {
-          'Content-Type': 'application/json',
-          'x-api-key': 'cs46_learning_companion_secure_key_2024'
-        });
-        console.log('请求体:', JSON.stringify({
-          user_id: userId
-        }, null, 2));
-        console.log('========================\n');
-        
-        const createChatResponse = await fetch(`${API_URL}/chats/create`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': 'cs46_learning_companion_secure_key_2024'
-          },
-          body: JSON.stringify({
-            user_id: userId
-          })
-        });
-        
-        // 调试日志：创建聊天会话响应信息
-        console.log('\n=== 创建聊天会话响应信息 ===');
-        console.log('状态码:', createChatResponse.status);
-        console.log('状态文本:', createChatResponse.statusText);
-        console.log('响应头:', Object.fromEntries(createChatResponse.headers.entries()));
-        const chatData = await createChatResponse.json();
-        console.log('响应体:', JSON.stringify(chatData, null, 2));
-        console.log('========================\n');
-        
-        if (chatData && chatData.id) {
-          await AsyncStorage.setItem('lastChatId', chatData.id.toString());
-          console.log('✅ 成功创建聊天会话，ID:', chatData.id);
-          // 先全部 await 完成，再跳转
+        if (userId) {
+          await AsyncStorage.setItem('user_id', userId.toString());
           await fetchAndSaveAllChatHistory(userId);
-          // ...创建聊天会话...
-          // ...await 完成后再 router.replace(...)
-          router.replace(`/?id=${chatData.id}`);
+          router.replace('/');
         } else {
-          throw new Error('创建聊天会话失败');
+          console.error('userId is empty, cannot fetch chat history');
+          router.replace('/');
         }
-      } catch (error) {
-        console.error('❌ 创建聊天会话失败:', error);
-        setEmail('');
-        setPassword('');
-        resetVerification();
-        router.replace('/');
+      } else {
+        // First time login - redirect to tutorial
+        console.log('First time login detected, redirecting to tutorial');
+        // Store the token in AsyncStorage before redirecting
+        try {
+          await AsyncStorage.setItem('temp_token', responseData.access_token);
+          console.log('Token stored successfully for tutorial page');
+        } catch (error) {
+          console.error('Failed to store token:', error);
+        }
+        router.replace('/LoginPages/TutorialPage');
       }
       
     } catch (error) {
-      console.error('❌ 登录过程发生错误:', error);
+      console.error('❌ Login process error:', error);
       if (error instanceof Error) {
         if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
           Alert.alert(
-            '网络错误',
-            `错误类型: 网络连接失败\n原因: ${error.message}\n请检查:\n1. 网络连接是否正常\n2. 服务器地址是否正确\n3. 代理是否启用\n4. 防火墙设置`,
+            'Network Error',
+            `Error Type: Network connection failed\nReason: ${error.message}\nPlease check:\n1. Network connection\n2. Server address\n3. Proxy settings\n4. Firewall settings`,
             [
               {
-                text: '重试',
+                text: 'Retry',
                 onPress: () => {
                   setEmail('');
                   setPassword('');
@@ -193,7 +142,7 @@ export default function LoginPage() {
                 }
               },
               {
-                text: '取消',
+                text: 'Cancel',
                 style: 'cancel',
                 onPress: () => {
                   setEmail('');
@@ -204,13 +153,13 @@ export default function LoginPage() {
             ]
           );
         } else {
-          Alert.alert('错误', error.message);
+          Alert.alert('Error', error.message);
           setEmail('');
           setPassword('');
           resetVerification();
         }
       } else {
-        Alert.alert('错误', '登录失败，请稍后重试');
+        Alert.alert('Error', 'Login failed, please try again');
         setEmail('');
         setPassword('');
         resetVerification();

@@ -13,7 +13,13 @@ export default function VoiceChatPage() {
 
   const userId =112;
   const { id } = useLocalSearchParams();
-  const chatId = parseInt(id as string); 
+  if (!id || isNaN(parseInt(id as string))) {
+    console.warn("❌ Invalid chatId:", id);
+    Alert.alert("Error", "Invalid chat ID, cannot upload voice");
+    return;
+  }
+
+  const chatId = parseInt(id as string);
   const apiKey = 'cs46_learning_companion_secure_key_2024';
   const backendUrl = 'base/voice-chat';
 
