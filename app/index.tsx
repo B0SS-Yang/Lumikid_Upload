@@ -383,15 +383,41 @@ export default function ChatPage() {
           break;
 
         case 'vocabulary':
-          const options = currentGameAnswer.match(/\((.*?)\)/g)?.map(opt => 
-            opt.replace(/[()]/g, '').toLowerCase()
-          ) || [];
+          // Log the request data for vocabulary game
+          console.log('📤 Vocabulary game request:', {
+            userInput: trimmedInput,
+            currentGameAnswer,
+            gameType: 'vocabulary',
+            timestamp: new Date().toISOString()
+          });
+
+          // For vocabulary game, the correct answer should be the first option
+          const correctAnswer = currentGameAnswer.toLowerCase();
           
-          if (!options.includes(trimmedInput)) {
-            errorMessage = 'Please choose one of the words in brackets.';
+          // Log the validation process
+          console.log('🎮 Vocabulary answer validation:', {
+            userInput: trimmedInput,
+            currentGameAnswer,
+            correctAnswer,
+            isCorrect: trimmedInput === correctAnswer,
+            timestamp: new Date().toISOString()
+          });
+          
+          if (trimmedInput === correctAnswer) {
+            isCorrect = true;
           } else {
-            isCorrect = trimmedInput === currentGameAnswer.toLowerCase();
+            isCorrect = false;
+            errorMessage = 'Incorrect answer, please try again.';
           }
+          
+          // Log the response/result
+          console.log('📥 Vocabulary game response:', {
+            matchResult: isCorrect ? 'Correct answer' : 'Incorrect answer',
+            userInput: trimmedInput,
+            correctAnswer: correctAnswer,
+            errorMessage: errorMessage,
+            timestamp: new Date().toISOString()
+          });
           break;
       }
 
