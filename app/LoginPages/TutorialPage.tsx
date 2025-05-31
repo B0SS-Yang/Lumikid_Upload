@@ -101,15 +101,21 @@ export default function TutorialPage() {
 
   const sendUserDataToBackend = async (userData: UserData) => {
     try {
-      // First try to get the temporary token
+      // First try to get the temporary token and user_id
       const tempToken = await AsyncStorage.getItem('temp_token');
+      const userId = await AsyncStorage.getItem('user_id');
       const userName = await AsyncStorage.getItem('user_name');
       const storedGender = await AsyncStorage.getItem('user_gender');
       
-      console.log('Sending user data:', { userName, ...userData });
+      console.log('Sending user data:', { userName, userId, ...userData });
 
       if (!tempToken) {
         console.error('No token found for user data update');
+        return;
+      }
+
+      if (!userId) {
+        console.error('No user_id found for user data update');
         return;
       }
 
@@ -124,6 +130,7 @@ export default function TutorialPage() {
 
       const requestBody = {
         token: tempToken,
+        user_id: parseInt(userId),
         user_data: completeUserData
       };
 
@@ -151,6 +158,14 @@ export default function TutorialPage() {
         // After successful update, move the token to permanent storage
         await AsyncStorage.setItem('token', tempToken);
         await AsyncStorage.removeItem('temp_token');
+
+        // Save user_id if it's in the response
+        if (data.user_id) {
+          await AsyncStorage.setItem('user_id', data.user_id.toString());
+          console.log('User ID saved:', data.user_id);
+        } else {
+          console.warn('No user_id in response');
+        }
       }
 
       // Save user info locally regardless of backend success

@@ -9,7 +9,8 @@ import {
     TextInput,
     KeyboardAvoidingView,
     Platform,
-    Dimensions
+    Dimensions,
+    ScrollView
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -80,11 +81,14 @@ export default function PinSettingPage() {
         try {
             setIsLoading(true);
             const email = await AsyncStorage.getItem('email');
+            const userId = await AsyncStorage.getItem('user_id');
             
-            if (!email) {
+            if (!email || !userId) {
                 setError('User not authenticated');
                 return;
             }
+
+            console.log('Setting PIN for user:', { email, userId });
 
             // Set parent password using the backend API
             const response = await fetch(`${API_URL}/auth/set_parent_password`, {
@@ -95,7 +99,8 @@ export default function PinSettingPage() {
                 },
                 body: JSON.stringify({
                     email: email,
-                    password: pin
+                    password: pin,
+                    user_id: parseInt(userId)
                 }),
             });
 
@@ -152,57 +157,61 @@ export default function PinSettingPage() {
                     <View style={styles.headerRight} />
                 </View>
 
-                {/* Main Content */}
                 <KeyboardAvoidingView 
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={styles.keyboardAvoidingView}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
                 >
-                    <View style={styles.contentContainer}>
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.title}>Set Parent PIN</Text>
-                            <Text style={styles.subtitle}>
-                                Create a 4-digit PIN to protect parental control settings
-                            </Text>
-                        </View>
-
-                        <View style={styles.inputContainer}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter 4-digit PIN"
-                                value={pin}
-                                onChangeText={handlePinChange}
-                                secureTextEntry
-                                keyboardType="number-pad"
-                                maxLength={4}
-                                placeholderTextColor={Colors.greyLight}
-                            />
-
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Confirm 4-digit PIN"
-                                value={confirmPin}
-                                onChangeText={handleConfirmPinChange}
-                                secureTextEntry
-                                keyboardType="number-pad"
-                                maxLength={4}
-                                placeholderTextColor={Colors.greyLight}
-                            />
-
-                            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                            <TouchableOpacity
-                                style={[styles.button, isLoading && styles.buttonDisabled]}
-                                onPress={handleSubmit}
-                                disabled={isLoading}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={styles.buttonText}>
-                                    {isLoading ? 'Setting PIN...' : 'Set PIN'}
+                    <ScrollView 
+                        contentContainerStyle={styles.scrollViewContent}
+                        bounces={false}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <View style={styles.contentContainer}>
+                            <View style={styles.titleContainer}>
+                                <Text style={styles.title}>Set Parent PIN</Text>
+                                <Text style={styles.subtitle}>
+                                    Create a 4-digit PIN to protect parental control settings
                                 </Text>
-                            </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.inputContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter 4-digit PIN"
+                                    value={pin}
+                                    onChangeText={handlePinChange}
+                                    secureTextEntry
+                                    keyboardType="number-pad"
+                                    maxLength={4}
+                                    placeholderTextColor={Colors.greyLight}
+                                />
+
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Confirm 4-digit PIN"
+                                    value={confirmPin}
+                                    onChangeText={handleConfirmPinChange}
+                                    secureTextEntry
+                                    keyboardType="number-pad"
+                                    maxLength={4}
+                                    placeholderTextColor={Colors.greyLight}
+                                />
+
+                                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                                <TouchableOpacity
+                                    style={[styles.button, isLoading && styles.buttonDisabled]}
+                                    onPress={handleSubmit}
+                                    disabled={isLoading}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.buttonText}>
+                                        {isLoading ? 'Setting PIN...' : 'Set PIN'}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    </View>
+                    </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </SafeAreaProvider>
@@ -223,7 +232,6 @@ const styles = StyleSheet.create({
         borderBottomColor: '#eee',
         paddingHorizontal: 16,
         backgroundColor: Colors.light,
-        zIndex: 1,
     },
     skipButton: {
         padding: 8,
@@ -244,18 +252,20 @@ const styles = StyleSheet.create({
     keyboardAvoidingView: {
         flex: 1,
     },
-    contentContainer: {
-        flex: 1,
+    scrollViewContent: {
+        flexGrow: 1,
         justifyContent: 'center',
-        alignItems: 'center',
+    },
+    contentContainer: {
         paddingHorizontal: 20,
-        minHeight: windowHeight * 0.5, // 确保内容区域最小高度
+        paddingVertical: 40,
+        justifyContent: 'center',
+        minHeight: windowHeight * 0.7,
     },
     titleContainer: {
         width: '100%',
         alignItems: 'center',
         marginBottom: 40,
-        paddingTop: 20,
     },
     title: {
         fontSize: 24,
@@ -268,11 +278,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: Colors.greyLight,
         textAlign: 'center',
+        paddingHorizontal: 20,
     },
     inputContainer: {
         width: '100%',
         maxWidth: 300,
-        paddingHorizontal: 20,
+        alignSelf: 'center',
         alignItems: 'center',
     },
     input: {
@@ -282,12 +293,10 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         fontSize: 16,
         color: Colors.grey,
-        textAlign: 'left',
-        letterSpacing: 1,
         width: '100%',
         borderWidth: 1,
         borderColor: Colors.greyLight,
-        height: 50, // 固定输入框高度
+        height: 50,
     },
     button: {
         backgroundColor: Colors.primary,
@@ -296,7 +305,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 20,
         width: '100%',
-        height: 50, // 固定按钮高度
+        height: 50,
     },
     buttonDisabled: {
         opacity: 0.7,
@@ -310,8 +319,6 @@ const styles = StyleSheet.create({
         color: Colors.orange,
         textAlign: 'center',
         marginTop: 10,
-        position: 'absolute',
-        bottom: -30,
-        width: '100%',
+        fontSize: 14,
     },
 }); 

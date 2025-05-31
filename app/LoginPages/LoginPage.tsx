@@ -104,7 +104,9 @@ export default function LoginPage() {
                       responseData.user?.id;
 
         if (userId) {
+          console.log('Setting user_id in AsyncStorage:', userId);
           await AsyncStorage.setItem('user_id', userId.toString());
+          await AsyncStorage.setItem('email', email);
           await fetchAndSaveAllChatHistory(userId);
           router.replace('/');
         } else {
@@ -114,12 +116,21 @@ export default function LoginPage() {
       } else {
         // First time login - redirect to tutorial
         console.log('First time login detected, redirecting to tutorial');
-        // Store the token in AsyncStorage before redirecting
+        // Store the token and user_id in AsyncStorage before redirecting
         try {
+          const userId = responseData.user_id || 
+                        responseData.userId || 
+                        responseData.user?.id;
+          
+          if (userId) {
+            console.log('Setting user_id for new user:', userId);
+            await AsyncStorage.setItem('user_id', userId.toString());
+            await AsyncStorage.setItem('email', email);
+          }
           await AsyncStorage.setItem('temp_token', responseData.access_token);
           console.log('Token stored successfully for tutorial page');
         } catch (error) {
-          console.error('Failed to store token:', error);
+          console.error('Failed to store token or user_id:', error);
         }
         router.replace('/LoginPages/TutorialPage');
       }
