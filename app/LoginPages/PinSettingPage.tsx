@@ -256,12 +256,15 @@ const styles = StyleSheet.create({
     input: {
         backgroundColor: Colors.input,
         borderRadius: 8,
-        padding: 15,
+        padding: 12,
         marginBottom: 15,
-        fontSize: 24,  // 增大字体以更好显示PIN码
+        fontSize: 16,  // 调整为标准字体大小
         color: Colors.grey,
-        textAlign: 'center',
-        letterSpacing: 8,  // 增加字符间距使PIN码更易读
+        textAlign: 'left', // 左对齐，与其他输入框保持一致
+        letterSpacing: 1,  // 恢复正常字符间距
+        width: '100%',
+        borderWidth: 1,
+        borderColor: Colors.greyLight,
     },
     button: {
         backgroundColor: Colors.primary,
@@ -269,6 +272,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         alignItems: 'center',
         marginTop: 20,
+        width: '100%', // 确保按钮宽度一致
     },
     buttonDisabled: {
         opacity: 0.7,
