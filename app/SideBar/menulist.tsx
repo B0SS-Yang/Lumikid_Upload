@@ -543,10 +543,10 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 15,
-    fontSize: 24,  // 增大字体以更好显示PIN码
-    textAlign: 'center',
+    fontSize: 16,  // 调整为标准字体大小
+    textAlign: 'left', // 左对齐，与其他输入框保持一致
     marginTop: 10,
-    letterSpacing: 8,  // 增加字符间距使PIN码更易读
+    letterSpacing: 1,  // 调整字符间距为标准间距
   },
   pinError: {
     color: '#FF3B30',
