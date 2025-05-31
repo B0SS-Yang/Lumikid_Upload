@@ -220,24 +220,6 @@ export default function RegisterPage() {
         onPress={() => router.push('../LoginPages/LoginPage')}>
         <Text style={styles.loginLinkText}>Already have an account? Login</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={styles.loginLink}
-        onPress={() => router.push('../LoginPages/TutorialPage')}>
-        <Text style={styles.loginLinkText}>Skip to tutorial</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={styles.loginLink}
-        onPress={() => router.push('../LoginPages/VerifyCodePage')}>
-        <Text style={styles.loginLinkText}>Skip to verify code</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.loginLink}
-        onPress={() => router.push('../LoginPages/PinSettingPage')}>
-        <Text style={styles.loginLinkText}>Skip to Pin Setting</Text>
-      </TouchableOpacity>
     </View>
   );
 }
