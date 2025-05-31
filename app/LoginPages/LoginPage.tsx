@@ -28,12 +28,11 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('错误', '请填写所有字段');
-      resetVerification();
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
     if (!isVerified) {
-      Alert.alert('错误', '请完成验证');
+      Alert.alert('Error', 'Please complete verification');
       return;
     }
     try {

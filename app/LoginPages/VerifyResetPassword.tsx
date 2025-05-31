@@ -23,6 +23,8 @@ const EmailVerificationScreen = () => {
   const [timer, setTimer] = useState<number>(60);
   const [error, setError] = useState<string>('');
   const inputRefs = useRef<Array<TextInput | null>>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isResending, setIsResending] = useState<boolean>(false);
 
   useEffect(() => {
     if (timer > 0) {
@@ -51,81 +53,72 @@ const EmailVerificationScreen = () => {
     }
   };
 
-  const handleSubmit = async () => {
-    const enteredCode = code.join('');
-    if (enteredCode.length < CODE_LENGTH) {
-      setError('Please complete the verification code input');
+  const handleVerify = async () => {
+    if (!code) {
+      Alert.alert('Error', 'Please enter verification code');
+      return;
+    }
+
+    const email = await AsyncStorage.getItem('pendingVerificationEmail');
+    if (!email) {
+      Alert.alert('Error', 'Email information lost, please try again');
+      router.replace('/LoginPages/ForgotPasswordPage');
       return;
     }
 
     try {
-      const email = await AsyncStorage.getItem('pendingVerificationEmail');
-      if (!email) {
-        setError('Please login again');
-        return;
-      }
-
+      setIsLoading(true);
       const response = await fetch(`${API_URL}/auth/verify_reset_code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': 'cs46_learning_companion_secure_key_2024',
         },
-        body: JSON.stringify({
-          email,
-          code: enteredCode,
-        }),
+        body: JSON.stringify({ email, code }),
       });
 
       const data = await response.json();
-      console.log('Verification response:', data);
-
       if (response.ok) {
         router.replace('/LoginPages/ResetPasswordPage');
       } else {
-        setError(data.detail || 'Verification code error, please try again');
+        Alert.alert('Error', data.detail || 'Invalid verification code');
       }
-    } catch (err: any) {
-      console.error('Verification error:', err);
-      setError(err.message || 'Verification failed, please try again');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to connect to server. Please try again later.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleResend = async () => {
-    if (timer === 0) {
-      try {
-        const email = await AsyncStorage.getItem('pendingVerificationEmail');
-        if (!email) {
-          setError('Please login again');
-          return;
-        }
+    const email = await AsyncStorage.getItem('pendingVerificationEmail');
+    if (!email) {
+      Alert.alert('Error', 'Email information lost, please try again');
+      router.replace('/LoginPages/ForgotPasswordPage');
+      return;
+    }
 
-        const response = await fetch(`${API_URL}/auth/resend-verification`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email }),
-        });
+    try {
+      setIsResending(true);
+      const response = await fetch(`${API_URL}/auth/forgot_password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'cs46_learning_companion_secure_key_2024',
+        },
+        body: JSON.stringify({ email }),
+      });
 
-        const data = await response.json();
-        console.log('Resend response:', data);
-
-        if (response.ok) {
-          setCode(Array(CODE_LENGTH).fill(''));
-          setError('');
-          setTimer(60);
-          Alert.alert('Success', 'A new verification code has been sent to your email');
-        } else if (response.status === 401) {
-          // 如果是 401 状态码，跳转到验证页面
-          await AsyncStorage.setItem('pendingVerificationEmail', email);
-          router.replace('/LoginPages/VerifyCodePage');
-        } else {
-          setError(data.detail || 'Resend failed, please try again');
-        }
-      } catch (err: any) {
-        console.error('Resend error:', err);
-        setError(err.message || 'Resend failed, please try again');
+      const data = await response.json();
+      if (response.ok) {
+        Alert.alert('Success', 'New verification code has been sent');
+      } else {
+        Alert.alert('Error', data.detail || 'Failed to send verification code');
       }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to connect to server. Please try again later.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -157,19 +150,28 @@ const EmailVerificationScreen = () => {
         ))}
       </View>
 
-      <TouchableOpacity onPress={handleResend} disabled={timer > 0}>
-        <Text style={[styles.resendText, timer > 0 && styles.resendTextDisabled]}>
-          {timer > 0 ? `${timer} seconds later resend` : 'Resend verification code'}
+      <TouchableOpacity
+        style={[defaultStyles.btn, styles.verifyButton, isLoading && styles.disabledButton]}
+        onPress={handleVerify}
+        disabled={isLoading}
+      >
+        <Text style={styles.verifyButtonText}>
+          {isLoading ? 'Verifying...' : 'Verify Code'}
         </Text>
       </TouchableOpacity>
 
-      {error !== '' && <Text style={styles.errorText}>{error}</Text>}
-
-      <TouchableOpacity 
-        style={[defaultStyles.btn, styles.submitButton]} 
-        onPress={handleSubmit}
+      <TouchableOpacity
+        style={[styles.resendButton, isResending && styles.disabledButton]}
+        onPress={handleResend}
+        disabled={isResending}
       >
-        <Text style={styles.submitText}>Verify</Text>
+        <Text style={styles.resendButtonText}>
+          {isResending ? 'Sending...' : 'Resend Code'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
+        <Text style={styles.backLinkText}>Back</Text>
       </TouchableOpacity>
     </View>
   );
@@ -210,27 +212,38 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginHorizontal: 5,
   },
-  resendText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: Colors.primary,
-  },
-  resendTextDisabled: {
-    color: '#999',
-  },
-  errorText: {
-    marginTop: 15,
-    color: 'red',
-    fontSize: 16,
-  },
-  submitButton: {
+  verifyButton: {
     backgroundColor: Colors.primary,
     marginTop: 30,
     width: '100%',
   },
-  submitText: {
+  verifyButtonText: {
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  resendButton: {
+    backgroundColor: Colors.primary,
+    marginTop: 10,
+    width: '100%',
+  },
+  resendButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  backLink: {
+    marginTop: 10,
+    backgroundColor: Colors.primary,
+    padding: 10,
+    borderRadius: 8,
+  },
+  backLinkText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#999',
   },
 });

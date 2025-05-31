@@ -83,7 +83,7 @@ export default function RegisterPage() {
       // 获取响应数据
       const data = await response.json();
       console.log('Success Response Data:', JSON.stringify(data, null, 2));
-      setMessage("注册成功！您的访问令牌是：" + data.access_token);
+      setMessage("Registration successful! Your access token is: " + data.access_token);
       await AsyncStorage.setItem('token', data.access_token);
       await AsyncStorage.setItem('isLoggedIn', 'true');
       await AsyncStorage.setItem('lastChatId', '01');
@@ -167,7 +167,7 @@ export default function RegisterPage() {
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'The passwords you entered do not match');
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
@@ -181,7 +181,7 @@ export default function RegisterPage() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create New Account</Text>
+      <Text style={styles.title}>Create Account</Text>
       <View style={styles.inputContainer}>
         <TextInput 
           style={styles.input}

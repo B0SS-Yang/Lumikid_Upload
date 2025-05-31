@@ -10,6 +10,7 @@ import {
   Platform,
   Image,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,7 +22,7 @@ import { API_URL } from '@/constants/API';
 interface Message {
   id: string;
   text: string;
-  role: 'user' | 'assistant';
+  isUser: boolean;
 }
 
 interface UserData {
@@ -35,8 +36,8 @@ export default function TutorialPage() {
   const [step, setStep] = useState(0);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', text: 'Welcome to LumiKid! I am Lumi! Let\'s get to know you!', role: 'assistant' },
-    { id: '2', text: 'Please tell me your name.', role: 'assistant' },
+    { id: '1', text: 'Welcome to LumiKid! I am Lumi! Let\'s get to know you!', isUser: false },
+    { id: '2', text: 'Please tell me your name.', isUser: false },
   ]);
 
   const questions = [
@@ -117,93 +118,68 @@ export default function TutorialPage() {
     }
   };
 
-  const handleSend = async () => {
-    if (!inputText.trim()) return;
-
-    // 添加用户消息
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText,
-      role: 'user',
+  const handleSubmit = async () => {
+    // Build complete user data
+    const userData = {
+      name: questions[0].validate(inputText) ? inputText : '',
+      age: questions[1].validate(inputText) ? Number(inputText) : 0,
+      gender: questions[2].validate(inputText) ? inputText : 'Female'
     };
-    setMessages(prev => [...prev, userMessage]);
-    
+
+    // Save user info to local storage for later use
     try {
-      // 保存当前答案
-      await AsyncStorage.setItem(questions[step].key, inputText);
+      await AsyncStorage.setItem('user_name', userData.name);
+      await AsyncStorage.setItem('user_age', userData.age.toString());
+      await AsyncStorage.setItem('user_gender', userData.gender);
 
-      // 验证输入
-      if (!questions[step].validate(inputText)) {
-        let errorMessage = 'Please enter a valid answer';
-        if (questions[step].key === 'user_age') {
-          errorMessage = 'Please enter a valid age';
-        } else if (questions[step].key === 'user_gender') {
-          errorMessage = 'Please enter Male/Female/Boy/Girl';
-        }
+      // Add user message
+      const newMessage = {
+        id: Date.now().toString(),
+        text: inputText,
+        isUser: true,
+      };
+      setMessages(prev => [...prev, newMessage]);
 
-        const errorResponse: Message = {
-          id: Date.now().toString() + '_error',
-          text: errorMessage,
-          role: 'assistant',
-        };
-        setMessages(prev => [...prev, errorResponse]);
-        setInputText('');
+      // Save current answer
+      setInputText('');
+
+      // Validate input
+      if (!inputText.trim()) {
+        Alert.alert('Error', 'Please enter your answer');
         return;
       }
 
+      // Move to next question
       if (step < questions.length - 1) {
-        // 进入下一个问题
         setStep(step + 1);
         const nextQuestion: Message = {
           id: Date.now().toString() + '_question',
           text: questions[step + 1].question,
-          role: 'assistant',
+          isUser: false,
         };
         setTimeout(() => {
           setMessages(prev => [...prev, nextQuestion]);
         }, 500);
       } else {
-        // 完成所有问题，收集数据并发送到后端
-        const name = await AsyncStorage.getItem('user_name');
-        const age = Number(await AsyncStorage.getItem('user_age'));
-        const gender = await AsyncStorage.getItem('user_gender');
-        
-        // 标准化性别格式
-        const normalizedGender = (() => {
-          const lowerGender = gender?.toLowerCase();
-          if (lowerGender === 'male' || lowerGender === 'boy') {
-            return 'Male';
-          } else if (lowerGender === 'female' || lowerGender === 'girl') {
-            return 'Female';
-          }
-          return 'Female'; // 默认值
-        })();
-
-        const userData: UserData = {
-          age,
-          gender: normalizedGender,
-        };
-
-        // 发送数据到后端
+        // Complete all questions, collect data and send to backend
         await sendUserDataToBackend(userData);
 
         const finalMessage: Message = {
           id: Date.now().toString() + '_final',
-          text: `Great to meet you${name ? ', ' + name : ''}! Now let's set up a PIN to secure your account!`,
-          role: 'assistant',
+          text: `Great to meet you${userData.name ? ', ' + userData.name : ''}! Now let's set up a PIN to secure your account!`,
+          isUser: false,
         };
         setMessages(prev => [...prev, finalMessage]);
         
-        // 延迟跳转到PIN设置页面
+        // Delay redirect to PIN setting page
         setTimeout(() => {
           router.push('/LoginPages/PinSettingPage');
         }, 2000);
       }
     } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      console.error('Error saving user info:', error);
+      Alert.alert('Error', 'Failed to save user information');
     }
-    setInputText('');
   };
 
   const handleSkip = () => {
@@ -213,9 +189,9 @@ export default function TutorialPage() {
   const renderItem = ({ item }: { item: Message }) => (
     <View style={[
       styles.messageRow,
-      item.role === 'user' && styles.userMessageRow
+      item.isUser && styles.userMessageRow
     ]}>
-      {item.role === 'assistant' && (
+      {item.isUser && (
         <Image
           source={require('../../assets/images/Lumi Sun.png')}
           style={styles.avatar}
@@ -225,12 +201,12 @@ export default function TutorialPage() {
       <View
         style={[
           styles.messageBubble,
-          item.role === 'user' ? styles.userBubble : styles.assistantBubble,
+          item.isUser ? styles.userBubble : styles.assistantBubble,
         ]}
       >
         <Text style={[
           styles.messageText,
-          item.role === 'user' && styles.userMessageText
+          item.isUser && styles.userMessageText
         ]}>
           {item.text}
         </Text>
@@ -240,7 +216,7 @@ export default function TutorialPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 顶部区域 */}
+      {/* Top area */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.skipButton}
@@ -258,7 +234,7 @@ export default function TutorialPage() {
         <View style={styles.headerRight} />
       </View>
 
-      {/* 聊天内容 */}
+      {/* Chat content */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -268,7 +244,7 @@ export default function TutorialPage() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
-      {/* 输入区域 */}
+      {/* Input area */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={90}
@@ -286,8 +262,12 @@ export default function TutorialPage() {
             keyboardType={questions[step].keyboardType || 'default'}
           />
 
-          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-            <Ionicons name="send" size={24} color="white" />
+          <TouchableOpacity
+            style={[styles.sendButton, !inputText.trim() && styles.disabledButton]}
+            onPress={handleSubmit}
+            disabled={!inputText.trim()}
+          >
+            <Text style={styles.sendButtonText}>Send</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -391,5 +371,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#EAEAEA',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  sendButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
