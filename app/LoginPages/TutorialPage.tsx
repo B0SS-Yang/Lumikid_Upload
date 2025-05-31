@@ -70,30 +70,50 @@ export default function TutorialPage() {
   const sendUserDataToBackend = async (userData: UserData) => {
     try {
       const token = await AsyncStorage.getItem('token');
+      const userName = await AsyncStorage.getItem('user_name');
+      
       if (!token) {
         throw new Error('No token found');
       }
+
+      // 构建完整的用户数据
+      const completeUserData = {
+        name: userName,
+        age: userData.age,
+        gender: userData.gender
+      };
 
       const response = await fetch(`${API_URL}/auth/update_profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-api-key': 'cs46_learning_companion_secure_key_2024',
         },
         body: JSON.stringify({
-          token,
-          user_data: userData,
+          token: token,
+          user_data: completeUserData
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to update profile');
       }
 
       const data = await response.json();
       console.log('Profile updated successfully:', data);
+
+      // 保存用户信息到本地存储以供后续使用
+      await AsyncStorage.setItem('user_name', userName || '');
+      await AsyncStorage.setItem('user_age', userData.age.toString());
+      await AsyncStorage.setItem('user_gender', userData.gender);
+
     } catch (error) {
       console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile. Please try again later.');
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to update profile. Please try again later.'
+      );
     }
   };
 
@@ -114,12 +134,19 @@ export default function TutorialPage() {
 
       // 验证输入
       if (!questions[step].validate(inputText)) {
-        const errorMessage: Message = {
+        let errorMessage = 'Please enter a valid answer';
+        if (questions[step].key === 'user_age') {
+          errorMessage = 'Please enter a valid age';
+        } else if (questions[step].key === 'user_gender') {
+          errorMessage = 'Please enter Male/Female/Boy/Girl';
+        }
+
+        const errorResponse: Message = {
           id: Date.now().toString() + '_error',
-          text: 'Please enter a valid answer (Male/Female/Boy/Girl)',
+          text: errorMessage,
           role: 'assistant',
         };
-        setMessages(prev => [...prev, errorMessage]);
+        setMessages(prev => [...prev, errorResponse]);
         setInputText('');
         return;
       }
@@ -137,6 +164,7 @@ export default function TutorialPage() {
         }, 500);
       } else {
         // 完成所有问题，收集数据并发送到后端
+        const name = await AsyncStorage.getItem('user_name');
         const age = Number(await AsyncStorage.getItem('user_age'));
         const gender = await AsyncStorage.getItem('user_gender');
         
@@ -161,13 +189,15 @@ export default function TutorialPage() {
 
         const finalMessage: Message = {
           id: Date.now().toString() + '_final',
-          text: 'Great! We have collected the basic information. Now take you to the main page!',
+          text: `Great to meet you${name ? ', ' + name : ''}! Now let's set up a PIN to secure your account!`,
           role: 'assistant',
         };
         setMessages(prev => [...prev, finalMessage]);
+        
+        // 延迟跳转到PIN设置页面
         setTimeout(() => {
-          router.push('/');
-        }, 5000);
+          router.push('/LoginPages/PinSettingPage');
+        }, 2000);
       }
     } catch (error) {
       console.error('Error:', error);

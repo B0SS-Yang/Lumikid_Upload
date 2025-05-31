@@ -43,7 +43,9 @@ export default function ChatPage() {
 
   // 小游戏答题相关state
   const [gameActive, setGameActive] = useState(!!gameQuestion);
-  const [currentGame, setCurrentGame] = useState(gameType); // 记录当前小游戏类型
+  const [currentGame, setCurrentGame] = useState<'math' | 'vocabulary' | 'grammar'>(
+    gameType as 'math' | 'vocabulary' | 'grammar' || 'grammar'
+  );
   const [currentGameAnswer, setCurrentGameAnswer] = useState(gameAnswer);
 
   // 新增：是否等待继续/退出小游戏
@@ -178,18 +180,39 @@ export default function ChatPage() {
   
   // 新增：首次加载时将题目插入AI消息，并保存答案
   useEffect(() => {
-    setCurrentGameAnswer(gameAnswer);
-    // 输出初始题目和答案
-    console.log('🎮 First game parameters:', { gameQuestion, gameAnswer });
-  }, [gameQuestion, gameAnswer, gameActive]);
-
-  useEffect(() => {
     if (gameQuestion && gameType) {
+      // 确保游戏类型是有效的
+      const validGameType = ['math', 'vocabulary', 'grammar'].includes(gameType) 
+        ? gameType as 'math' | 'vocabulary' | 'grammar' 
+        : 'grammar';
+      
+      console.log('🎮 Initializing game:', {
+        type: validGameType,
+        question: gameQuestion,
+        answer: gameAnswer
+      });
+
+      // 根据游戏类型格式化问题
+      let formattedQuestion = gameQuestion;
+      switch (validGameType) {
+        case 'grammar':
+          formattedQuestion = formatGrammarQuestion(gameQuestion);
+          break;
+        case 'vocabulary':
+          // 确保词汇题包含选项
+          formattedQuestion = gameQuestion.includes('(') ? gameQuestion : `${gameQuestion} (${gameAnswer})`;
+          break;
+        case 'math':
+          // 数学题不需要特殊格式化
+          formattedQuestion = gameQuestion;
+          break;
+      }
+
       setMessages(prev => [
         ...prev,
-        { id: Date.now().toString() + '_game', text: gameQuestion, role: 'assistant' as 'assistant' }
+        { id: Date.now().toString() + '_game', text: formattedQuestion, role: 'assistant' as 'assistant' }
       ]);
-      setCurrentGame(gameType);
+      setCurrentGame(validGameType);
       setCurrentGameAnswer(gameAnswer);
       setGameActive(true);
     }
@@ -207,59 +230,110 @@ export default function ChatPage() {
       ]);
       setInputText("");
       if (userInput === 'y') {
-        // 重新请求新题
+        // 重新请求新题，确保使用相同的游戏类型
         try {
-          const res = await fetch(`${API_URL}/game/grammar`, {
+          console.log(`🎮 Continuing ${currentGame} game...`);
+          const res = await fetch(`${API_URL}/game/${currentGame}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'x-api-key': 'cs46_learning_companion_secure_key_2024',
             },
-            body: JSON.stringify({ user_id: userId, chat_id: chatId }),
+            body: JSON.stringify({ 
+              user_id: userId, 
+              chat_id: chatId,
+              game_type: currentGame 
+            }),
           });
-          if (!res.ok) throw new Error('Failed to get new question');
+
+          if (!res.ok) throw new Error(`Failed to get new ${currentGame} question`);
           const data = await res.json();
-          console.log('🎮 Game interface original reply:', data);
+          console.log(`🎮 ${currentGame} game new question response:`, data);
+
           let question = '', answer = '';
           if (Array.isArray(data)) {
-            question = data[0]; answer = data[1];
-          } else if (typeof data === 'object' && data.Question && data.Answer) {
-            question = data.Question; answer = data.Answer;
+            [question, answer] = data;
+          } else if (typeof data === 'object') {
+            if (data.Question && data.Answer) {
+              question = data.Question;
+              answer = data.Answer;
+            } else {
+              console.error('Unexpected data format:', data);
+              throw new Error('Invalid game data format');
+            }
           }
-          const formattedQuestion = formatGrammarQuestion(question);
+
+          // 根据游戏类型格式化问题
+          let formattedQuestion = question;
+          switch (currentGame) {
+            case 'grammar':
+              formattedQuestion = formatGrammarQuestion(question);
+              break;
+            case 'vocabulary':
+              formattedQuestion = question.includes('(') ? question : `${question} (${answer})`;
+              break;
+            case 'math':
+              formattedQuestion = question;  // 数学题不需要特殊格式化
+              break;
+          }
+
+          console.log(`🎮 Setting new ${currentGame} question:`, {
+            formatted: formattedQuestion,
+            original: question,
+            answer: answer
+          });
+
           setMessages(prev => [
             ...prev,
-            { id: Date.now().toString() + '_game', text: formattedQuestion, role: 'assistant' as 'assistant' },
+            { 
+              id: Date.now().toString() + '_game', 
+              text: formattedQuestion, 
+              role: 'assistant' as 'assistant' 
+            },
           ]);
           setCurrentGameAnswer(answer);
           setGameActive(true);
           setWaitingContinue(false);
         } catch (err) {
+          console.error(`❌ Error in ${currentGame} game continuation:`, err);
           setMessages(prev => [
             ...prev,
-            { id: Date.now().toString() + '_game_result', text: 'Failed to get new question, please try again.', role: 'assistant' as 'assistant' },
+            {
+              id: Date.now().toString() + '_game_result',
+              text: `Failed to get new ${currentGame} question. Would you like to try again? (y/n)`,
+              role: 'assistant' as 'assistant',
+            },
           ]);
         }
       } else if (userInput === 'n') {
+        const gameEndMessage = `Thanks for playing ${currentGame} game! You can start a new game anytime.`;
         setMessages(prev => [
           ...prev,
-          { id: Date.now().toString() + '_game_result', text: 'Exited game.', role: 'assistant' as 'assistant' },
+          {
+            id: Date.now().toString() + '_game_result',
+            text: gameEndMessage,
+            role: 'assistant' as 'assistant',
+          },
         ]);
         setGameActive(false);
-        setCurrentGame('');
+        setCurrentGame('grammar');
         setCurrentGameAnswer('');
         setWaitingContinue(false);
       } else {
         setMessages(prev => [
           ...prev,
-          { id: Date.now().toString() + '_game_result', text: 'Please enter y to continue, n to exit.', role: 'assistant' as 'assistant' },
+          {
+            id: Date.now().toString() + '_game_result',
+            text: 'Please enter y to continue with another question, or n to exit.',
+            role: 'assistant' as 'assistant',
+          },
         ]);
       }
       return;
     }
 
     // 2. 小游戏答题优先处理
-    if (gameActive && currentGame === 'grammar') {
+    if (gameActive) {
       const userMessage = {
         id: Date.now().toString(),
         text: inputText,
@@ -267,62 +341,90 @@ export default function ChatPage() {
       };
       setMessages(prev => [...prev, userMessage]);
       setInputText("");
-      // 新增：输入校验，只允许a/b/c
-      const trimmed = userMessage.text.trim().toLowerCase();
-      if (!['a', 'b', 'c'].includes(trimmed)) {
+
+      // 检查是否要退出游戏
+      if (inputText.toLowerCase() === 'quit') {
         setMessages(prev => [
           ...prev,
           {
             id: Date.now().toString() + '_game_result',
-            text: 'Please enter a, b, or c.',
-            role: 'assistant' as 'assistant',
-          },
-        ]);
-        return;
-      }
-      // 新增：判断是否答对
-      const answerLetter = currentGameAnswer.trim().toLowerCase().charAt(0); // 只取首字母
-      if (trimmed === answerLetter) {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: Date.now().toString() + '_game_result',
-            text: 'Correct! Do you want to continue the game? Please enter y to continue, n to exit.',
+            text: `Game exited. You can start a new ${currentGame} game anytime!`,
             role: 'assistant' as 'assistant',
           },
         ]);
         setGameActive(false);
-        setWaitingContinue(true);
+        setCurrentGame('grammar');
+        setCurrentGameAnswer('');
+        setWaitingContinue(false);
         return;
       }
-      // 答案不对时才调用后端校验（可选，或直接本地判断）
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now().toString() + '_game_result',
-          text: 'Incorrect answer, please try again.',
-          role: 'assistant' as 'assistant',
-        },
-      ]);
+
+      // 根据游戏类型验证答案
+      const trimmedInput = inputText.trim().toLowerCase();
+      let isCorrect = false;
+      let errorMessage = '';
+
+      switch (currentGame) {
+        case 'grammar':
+          if (!['a', 'b', 'c'].includes(trimmedInput)) {
+            errorMessage = 'Please enter a, b, or c.';
+          } else {
+            const answerLetter = currentGameAnswer.trim().toLowerCase().charAt(0);
+            isCorrect = trimmedInput === answerLetter;
+          }
+          break;
+
+        case 'math':
+          if (!/^\d+$/.test(trimmedInput)) {
+            errorMessage = 'Please enter a number.';
+          } else {
+            isCorrect = trimmedInput === currentGameAnswer.trim();
+          }
+          break;
+
+        case 'vocabulary':
+          const options = currentGameAnswer.match(/\((.*?)\)/g)?.map(opt => 
+            opt.replace(/[()]/g, '').toLowerCase()
+          ) || [];
+          
+          if (!options.includes(trimmedInput)) {
+            errorMessage = 'Please choose one of the words in brackets.';
+          } else {
+            isCorrect = trimmedInput === currentGameAnswer.toLowerCase();
+          }
+          break;
+      }
+
+      if (errorMessage) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now().toString() + '_game_result',
+            text: errorMessage,
+            role: 'assistant' as 'assistant',
+          },
+        ]);
+      } else if (isCorrect) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now().toString() + '_game_result',
+            text: `Correct! Do you want to continue playing ${currentGame}? Please enter y to continue, n to exit.`,
+            role: 'assistant' as 'assistant',
+          },
+        ]);
+        setWaitingContinue(true);
+      } else {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now().toString() + '_game_result',
+            text: 'Incorrect answer, please try again or type "quit" to exit.',
+            role: 'assistant' as 'assistant',
+          },
+        ]);
+      }
       return;
-    }
-
-    if (gameActive && currentGame === 'math') {
-      // 判断数字
-      if (inputText.trim() === currentGameAnswer.trim()) {
-        // 正确
-      } else {
-        // 错误
-      }
-    }
-
-    if (gameActive && currentGame === 'vocabulary') {
-      // 判断单词
-      if (inputText.trim().toLowerCase() === currentGameAnswer.trim().toLowerCase()) {
-        // 正确
-      } else {
-        // 错误
-      }
     }
 
     // 请求体日志

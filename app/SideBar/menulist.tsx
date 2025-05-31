@@ -32,17 +32,11 @@ const features: Feature[] = [
 
 const fetchAndSaveAllChatHistory = async (userId: string) => {
   try {
-    console.log('fetchAndSaveAllChatHistory 被调用，userId:', userId);
     const chatListUrl = `${API_URL}/chats?user_id=${userId}`;
-    console.log('【DEBUG】获取聊天列表请求:');
-    console.log('请求URL:', chatListUrl);
-    console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
     const chatListRes = await fetch(chatListUrl, {
       headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
     });
-    console.log('响应状态:', chatListRes.status);
     const chatList = await chatListRes.json();
-    console.log('响应体:', chatList);
 
     const dirUri = FileSystem.documentDirectory + 'ChatHistory/';
     await FileSystem.makeDirectoryAsync(dirUri, { intermediates: true });
@@ -50,19 +44,13 @@ const fetchAndSaveAllChatHistory = async (userId: string) => {
     for (const chat of chatList) {
       const chatId = chat.id;
       const chatHistoryUrl = `${API_URL}/chathistory/${chatId}`;
-      console.log('【DEBUG】获取聊天历史请求:');
-      console.log('请求URL:', chatHistoryUrl);
-      console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
       const chatHistoryRes = await fetch(chatHistoryUrl, {
         headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
       });
-      console.log('响应状态:', chatHistoryRes.status);
       const chatHistory = await chatHistoryRes.json();
-      console.log('响应体:', chatHistory);
       const fileUri = `${dirUri}chat_${chatId}.json`;
       await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(chatHistory, null, 2));
     }
-    console.log('所有聊天历史已保存到本地 ChatHistory 文件夹');
   } catch (err) {
     console.error('拉取或保存聊天历史失败:', err);
   }
@@ -140,15 +128,65 @@ export default function FeaturePage() {
 
   // 处理PIN码验证
   const handlePinSubmit = async () => {
-    if (pin === '1111') { // 测试后门
+    // 保留测试后门
+    if (pin === '1111') {
       await AsyncStorage.setItem('isParentMode', 'true');
       setIsParentMode(true);
       setPinModalVisible(false);
       setPin('');
       setPinError('');
       router.replace('/');
-    } else {
-      setPinError('PIN码错误');
+      return;
+    }
+
+    // 验证PIN码长度
+    if (pin.length !== 4) {
+      setPinError('PIN code must be 4 digits');
+      return;
+    }
+
+    // 验证是否为纯数字
+    if (!/^\d{4}$/.test(pin)) {
+      setPinError('PIN code must contain only numbers');
+      return;
+    }
+
+    try {
+      const userId = await AsyncStorage.getItem('user_id');
+      const userEmail = await AsyncStorage.getItem('user_email');
+      
+      if (!userEmail) {
+        setPinError('Please login first');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/auth/check_parent_password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'cs46_learning_companion_secure_key_2024',
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          password: pin
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        await AsyncStorage.setItem('isParentMode', 'true');
+        setIsParentMode(true);
+        setPinModalVisible(false);
+        setPin('');
+        setPinError('');
+        router.replace('/');
+      } else {
+        setPinError('Incorrect PIN code');
+      }
+    } catch (err) {
+      console.error('PIN verification error:', err);
+      setPinError('Failed to verify PIN code');
     }
   };
 
@@ -213,29 +251,46 @@ export default function FeaturePage() {
     setConfirmingFeature(null);
   };
 
-  // ——— 5. 启动小游戏：指向 /game/:type 而非 /chat ———
+  // 启动小游戏：指向 /game/:type 而非 /chat
   const startGame = async (type: 'math' | 'vocabulary' | 'grammar') => {
     if (!userId) return;
     try {
+      console.log(`🎮 Starting ${type} game...`);
       const res = await fetch(`${API_URL}/game/${type}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': 'cs46_learning_companion_secure_key_2024',
         },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ 
+          user_id: userId,
+          chat_id: chatId 
+        }),
       });
+
       if (!res.ok) throw new Error('Failed to start game');
       const data = await res.json();
-      let question = '';
-      let answer = '';
+      console.log('🎮 Game initialization response:', data);
+
+      let question = '', answer = '';
       if (Array.isArray(data)) {
-        question = data[0];
-        answer = data[1];
-      } else if (typeof data === 'object' && data.Question && data.Answer) {
-        question = data.Question;
-        answer = data.Answer;
+        [question, answer] = data;
+      } else if (typeof data === 'object') {
+        if (data.Question && data.Answer) {
+          question = data.Question;
+          answer = data.Answer;
+        } else {
+          console.error('Unexpected data format:', data);
+          throw new Error('Invalid game data format');
+        }
       }
+
+      console.log('🎮 Initializing game:', {
+        type,
+        question,
+        answer
+      });
+
       // 跳转到首页并传递题目信息
       router.push({
         pathname: '/',
@@ -247,6 +302,7 @@ export default function FeaturePage() {
         },
       });
     } catch (err) {
+      console.error('❌ Game initialization error:', err);
       Alert.alert('启动失败', err instanceof Error ? err.message : '未知错误');
     } finally {
       setGameModalVisible(false);
@@ -363,21 +419,33 @@ export default function FeaturePage() {
         <Modal visible={pinModalVisible} transparent animationType="fade">
           <View style={styles.modalBackground}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Please enter the PIN code</Text>
+              <Text style={styles.modalTitle}>Enter 4-digit Parent PIN</Text>
               <TextInput
                 style={styles.pinInput}
                 value={pin}
-                onChangeText={setPin}
+                onChangeText={(text) => {
+                  // 限制只能输入数字且最多4位
+                  if (/^\d{0,4}$/.test(text)) {
+                    setPin(text);
+                    setPinError('');
+                  }
+                }}
                 keyboardType="number-pad"
                 maxLength={4}
                 secureTextEntry
-                placeholder="4-digit PIN code"
+                placeholder="Enter PIN"
               />
               {pinError ? (
                 <Text style={styles.pinError}>{pinError}</Text>
               ) : null}
               <View style={styles.modalButtons}>
-                <TouchableOpacity onPress={handleCancel}>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setPinModalVisible(false);
+                    setPin('');
+                    setPinError('');
+                  }}
+                >
                   <Text style={styles.modalCancel}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handlePinSubmit}>
@@ -475,14 +543,16 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 15,
-    fontSize: 18,
+    fontSize: 24,  // 增大字体以更好显示PIN码
     textAlign: 'center',
     marginTop: 10,
+    letterSpacing: 8,  // 增加字符间距使PIN码更易读
   },
   pinError: {
     color: '#FF3B30',
     marginTop: 10,
     fontSize: 14,
+    textAlign: 'center',  // 居中显示错误信息
   },
   subscribeButton: {
     backgroundColor: '#FF9500',
