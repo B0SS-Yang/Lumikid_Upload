@@ -15,16 +15,16 @@ export default function ResetPasswordPage() {
 
   const handleResetPassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert('错误', '请填写所有字段');
+      Alert.alert('Error', 'Please fill in all fields');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('错误', '两次输入的密码不一致');
+      Alert.alert('Error', 'Passwords do not match');
       return;
     }
     const email = await AsyncStorage.getItem('pendingVerificationEmail');
     if (!email) {
-      Alert.alert('错误', '邮箱信息丢失，请重新操作');
+      Alert.alert('Error', 'Email information lost, please try again');
       router.replace('/LoginPages/ForgotPasswordPage');
       return;
     }
@@ -37,9 +37,9 @@ export default function ResetPasswordPage() {
       });
       const data = await response.json();
       if (response.ok) {
-        Alert.alert('成功', '密码重置成功！', [
+        Alert.alert('Success', 'Password reset successful!', [
           {
-            text: '确定',
+            text: 'OK',
             onPress: async () => {
               await AsyncStorage.removeItem('pendingVerificationEmail');
               router.replace('/LoginPages/LoginPage');
@@ -47,10 +47,10 @@ export default function ResetPasswordPage() {
           },
         ]);
       } else {
-        Alert.alert('重置失败', data.detail || '请稍后重试');
+        Alert.alert('Reset Failed', data.detail || 'Please try again later');
       }
     } catch (err) {
-      Alert.alert('重置失败', err instanceof Error ? err.message : '请稍后重试');
+      Alert.alert('Reset Failed', err instanceof Error ? err.message : 'Please try again later');
     } finally {
       setIsLoading(false);
     }
@@ -58,37 +58,32 @@ export default function ResetPasswordPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      // 打开后端 Google 登录入口
       const result = await WebBrowser.openAuthSessionAsync(
         `${API_URL}/auth/login/google`,
-        // 这里填写你的前端回调地址（需和后端REDIRECT_URI一致）
         'yourapp://auth-callback'
       );
-      // result.url 里会包含 access_token
       if (result.type === 'success' && result.url) {
-        // 解析 access_token
         const match = result.url.match(/access_token=([^&]+)/);
         if (match) {
           const token = match[1];
           await AsyncStorage.setItem('token', token);
-          // 跳转到主页面
           router.replace('/');
         } else {
-          Alert.alert('登录失败', '未获取到token');
+          Alert.alert('Login Failed', 'Token not received');
         }
       }
     } catch (err) {
-      Alert.alert('登录失败', err instanceof Error ? err.message : '未知错误');
+      Alert.alert('Login Failed', err instanceof Error ? err.message : 'Unknown error');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>重置密码</Text>
+      <Text style={styles.title}>Reset Password</Text>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="新密码"
+          placeholder="New Password"
           placeholderTextColor={Colors.greyLight}
           secureTextEntry
           value={newPassword}
@@ -96,7 +91,7 @@ export default function ResetPasswordPage() {
         />
         <TextInput
           style={styles.input}
-          placeholder="确认新密码"
+          placeholder="Confirm New Password"
           placeholderTextColor={Colors.greyLight}
           secureTextEntry
           value={confirmPassword}
@@ -108,11 +103,11 @@ export default function ResetPasswordPage() {
         onPress={handleResetPassword}
         disabled={isLoading}>
         <Text style={styles.resetButtonText}>
-          {isLoading ? '重置中...' : '重置密码'}
+          {isLoading ? 'Resetting...' : 'Reset Password'}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.backLink} onPress={() => router.back()}>
-        <Text style={styles.backLinkText}>返回</Text>
+        <Text style={styles.backLinkText}>Back</Text>
       </TouchableOpacity>
     </View>
   );
