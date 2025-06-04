@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 export default function DataManagementPage() {
   const router = useRouter();
 
-  // 删除数据逻辑（这里只是演示弹窗）
+  // Delete data logic (demo alert only)
   const handleDelete = () => {
     Alert.alert(
       'Confirm Delete',
@@ -16,7 +16,7 @@ export default function DataManagementPage() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            // 这里写实际删除逻辑
+            // Actual delete logic goes here
             console.log('Chat history deleted');
           },
         },
@@ -33,12 +33,12 @@ export default function DataManagementPage() {
         <Text style={styles.title}>Data Management</Text>
       </View>
 
-      {/* 查看历史 */}
+      {/* View History */}
       <Pressable style={styles.row} onPress={() => console.log('View chat history')}>
         <Text style={styles.rowText}>View archived chat history</Text>
       </Pressable>
 
-      {/* 删除按钮 */}
+      {/* Delete button */}
       <Pressable style={styles.deleteBtn} onPress={handleDelete}>
         <Text style={styles.deleteText}>Delete all chat history</Text>
       </Pressable>

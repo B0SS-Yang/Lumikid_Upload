@@ -7,7 +7,7 @@ export default function RolesPage() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<'parent' | 'child' | null>(null);
 
-  // 页面加载时读取本地保存的角色
+  // Load locally saved role on page load
   useEffect(() => {
     const loadRole = async () => {
       try {
@@ -16,19 +16,19 @@ export default function RolesPage() {
           setSelectedRole(saved);
         }
       } catch (e) {
-        console.log('读取角色失败', e);
+        console.log('Failed to read role', e);
       }
     };
     loadRole();
   }, []);
 
-  // 选中后存入本地
+  // Save to local storage after selection
   const handleSelect = async (role: 'parent' | 'child') => {
     try {
       setSelectedRole(role);
       await AsyncStorage.setItem('selectedRole', role);
     } catch (e) {
-      console.log('保存角色失败', e);
+      console.log('Failed to save role', e);
     }
   };
 

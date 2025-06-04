@@ -17,7 +17,7 @@ interface Book {
   description: string;
 }
 
-// 图片映射：id => 本地图像
+// image mapping: id => local image
 const imageMap: Record<string, any> = {
   'book_001': require('../../assets/images/1.png'),
   'book_002': require('../../assets/images/2.png'),

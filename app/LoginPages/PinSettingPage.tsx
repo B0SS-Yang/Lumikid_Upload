@@ -40,7 +40,7 @@ export default function PinSettingPage() {
                     text: 'Skip',
                     onPress: async () => {
                         await AsyncStorage.setItem('userMode', 'Child');
-                        router.push('/LoginPages/LoginPage');
+                        router.push('/');
                     }
                 }
             ]
@@ -80,31 +80,46 @@ export default function PinSettingPage() {
 
         try {
             setIsLoading(true);
-            const email = await AsyncStorage.getItem('email');
             const userId = await AsyncStorage.getItem('user_id');
             
-            if (!email || !userId) {
+            if (!userId) {
                 setError('User not authenticated');
                 return;
             }
 
-            console.log('Setting PIN for user:', { email, userId });
+            console.log('Setting PIN for user:', { userId });
 
-            // Set parent password using the backend API
+            // Log request details
+            console.log('\n=== Set Parent PIN Request ===');
+            console.log('Request URL:', `${API_URL}/auth/set_parent_password`);
+            console.log('Request Method:', 'POST');
+            console.log('Request Headers:', {
+                'Content-Type': 'application/json'
+            });
+            console.log('Request Body:', JSON.stringify({
+                uid: parseInt(userId),
+                pin: pin
+            }, null, 2));
+            console.log('==================\n');
+
             const response = await fetch(`${API_URL}/auth/set_parent_password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': 'cs46_learning_companion_secure_key_2024',
                 },
                 body: JSON.stringify({
-                    email: email,
-                    password: pin,
-                    user_id: parseInt(userId)
+                    uid: parseInt(userId),
+                    pin: pin
                 }),
             });
 
             const data = await response.json();
+
+            // Log response details
+            console.log('\n=== Set Parent PIN Response ===');
+            console.log('Response Status:', response.status);
+            console.log('Response Data:', JSON.stringify(data, null, 2));
+            console.log('==================\n');
 
             if (!response.ok) {
                 throw new Error(data.detail || 'Failed to set parent PIN');

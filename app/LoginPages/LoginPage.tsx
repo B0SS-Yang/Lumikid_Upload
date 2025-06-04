@@ -66,7 +66,7 @@ export default function LoginPage() {
       console.log('==================\n');
       
       if (!response.ok) {
-        if (responseData.detail && (responseData.detail.includes('not verified') || responseData.detail.includes('未激活'))) {
+        if (responseData.detail && (responseData.detail.includes('not verified'))) {
           Alert.alert('Notice', 'Your account is not activated, please verify your email.', [
             {
               text: 'OK',
@@ -99,13 +99,13 @@ export default function LoginPage() {
       // Check if this is first login
       if (responseData.first_login === false) {
         // Existing user - proceed to main app
-        const userId = responseData.user_id || 
-                      responseData.userId || 
+      const userId = responseData.user_id || 
+                     responseData.userId || 
                       responseData.user?.id;
 
         if (userId) {
           console.log('Setting user_id in AsyncStorage:', userId);
-          await AsyncStorage.setItem('user_id', userId.toString());
+      await AsyncStorage.setItem('user_id', userId.toString());
           await AsyncStorage.setItem('email', email);
           await fetchAndSaveAllChatHistory(userId);
           router.replace('/');
@@ -126,10 +126,10 @@ export default function LoginPage() {
             console.log('Setting user_id for new user:', userId);
             await AsyncStorage.setItem('user_id', userId.toString());
             await AsyncStorage.setItem('email', email);
-          }
+        }
           await AsyncStorage.setItem('temp_token', responseData.access_token);
           console.log('Token stored successfully for tutorial page');
-        } catch (error) {
+      } catch (error) {
           console.error('Failed to store token or user_id:', error);
         }
         router.replace('/LoginPages/TutorialPage');
@@ -182,42 +182,42 @@ export default function LoginPage() {
 
   const fetchAndSaveAllChatHistory = async (userId: string) => {
     try {
-      console.log('fetchAndSaveAllChatHistory 被调用，userId:', userId);
-      // 1. 获取所有聊天列表
+      console.log('fetchAndSaveAllChatHistory has been called, userId:', userId);
+      // 1. get all chat list
       const chatListUrl = `${API_URL}/chats?user_id=${userId}`;
-      console.log('【DEBUG】获取聊天列表请求:');
-      console.log('请求URL:', chatListUrl);
-      console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
+      console.log('【DEBUG】Get chat list request:');
+      console.log('Request URL:', chatListUrl);
+      console.log('Request headers:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
       const chatListRes = await fetch(chatListUrl, {
         headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
       });
-      console.log('响应状态:', chatListRes.status);
+      console.log('Response status:', chatListRes.status);
       const chatList = await chatListRes.json();
-      console.log('响应体:', chatList);
+      console.log('Response body:', chatList);
 
-      // 2. 确保ChatHistory文件夹存在
+      // 2. ensure the ChatHistory folder exists
       const dirUri = FileSystem.documentDirectory + 'ChatHistory/';
       await FileSystem.makeDirectoryAsync(dirUri, { intermediates: true });
 
-      // 3. 遍历每个聊天，拉取历史并保存
+      // 3. iterate through each chat, fetch history and save
       for (const chat of chatList) {
         const chatId = chat.id;
         const chatHistoryUrl = `${API_URL}/chathistory/${chatId}`;
-        console.log('【DEBUG】获取聊天历史请求:');
-        console.log('请求URL:', chatHistoryUrl);
-        console.log('请求头:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
+        console.log('【DEBUG】Get chat history request:');
+        console.log('Request URL:', chatHistoryUrl);
+        console.log('Request headers:', { 'x-api-key': 'cs46_learning_companion_secure_key_2024' });
         const chatHistoryRes = await fetch(chatHistoryUrl, {
           headers: { 'x-api-key': 'cs46_learning_companion_secure_key_2024' }
         });
-        console.log('响应状态:', chatHistoryRes.status);
+        console.log('Response status:', chatHistoryRes.status);
         const chatHistory = await chatHistoryRes.json();
-        console.log('响应体:', chatHistory);
+        console.log('Response body:', chatHistory);
         const fileUri = `${dirUri}chat_${chatId}.json`;
         await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(chatHistory, null, 2));
       }
-      console.log('所有聊天历史已保存到本地 ChatHistory 文件夹');
+      console.log('All chat history has been saved to the local ChatHistory folder');
     } catch (err) {
-      console.error('拉取或保存聊天历史失败:', err);
+      console.error('Failed to fetch or save chat history:', err);
     }
   };
 

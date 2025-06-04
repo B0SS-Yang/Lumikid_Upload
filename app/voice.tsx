@@ -15,11 +15,11 @@ export default function VoiceChatPage() {
   const { id } = useLocalSearchParams();
   if (!id || isNaN(parseInt(id as string))) {
     console.warn("❌ Invalid chatId:", id);
-    Alert.alert("Error", "Invalid chat ID, cannot upload voice");
+    Alert.alert("Error", "Current chat ID is invalid, cannot upload voice");
     return;
   }
 
-  const chatId = parseInt(id as string);
+  const chatId = parseInt(id as string); 
   const apiKey = 'cs46_learning_companion_secure_key_2024';
   const backendUrl = 'base/voice-chat';
 
@@ -46,13 +46,13 @@ export default function VoiceChatPage() {
     try {
       setStatus('uploading');
       if (isNaN(chatId)) {
-        console.warn("❌ chatId 无效：", id);
-        Alert.alert("错误", "当前聊天 ID 无效，无法上传语音");
+        console.warn("❌ chatId is invalid:", id);
+        Alert.alert("Error", "Current chat ID is invalid, cannot upload voice");
         setStatus('idle');
         return;
       }
       
-      console.log("✅ 上传语音时使用的 chatId:", chatId);
+      console.log("✅ ChatId used for voice upload:", chatId);
       
       const recording = recordingRef.current;
       if (!recording) return;

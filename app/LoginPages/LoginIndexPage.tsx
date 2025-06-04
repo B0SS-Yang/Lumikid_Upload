@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { defaultStyles } from '@/constants/Styles';
 import Colors from '@/constants/Colors';
-import * as WebBrowser from 'expo-web-browser';
 import { API_URL } from '@/constants/API';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
@@ -29,10 +28,10 @@ const Page = () => {
         await AsyncStorage.setItem('token', token);
         router.replace('/');
       } else {
-        Alert.alert('登录失败', '未获取到token');
+        Alert.alert('Login Failed', 'No token received');
       }
     } else {
-      Alert.alert('登录失败', '未获取到token');
+      Alert.alert('Login Failed', 'No token received');
     }
   };
 

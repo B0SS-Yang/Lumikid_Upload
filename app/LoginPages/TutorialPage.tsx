@@ -152,8 +152,8 @@ export default function TutorialPage() {
         // Don't throw error, just log it and continue
         console.warn('Failed to update profile, but continuing with local save');
       } else {
-        const data = await response.json();
-        console.log('Profile updated successfully:', data);
+      const data = await response.json();
+      console.log('Profile updated successfully:', data);
         
         // After successful update, move the token to permanent storage
         await AsyncStorage.setItem('token', tempToken);
@@ -244,7 +244,7 @@ export default function TutorialPage() {
         if (isNaN(age) || age < 0 || age > 100) {
           Alert.alert('Error', 'Invalid age detected. Please start over.');
           return;
-        }
+          }
 
         // Prepare final user data
         const finalUserData: UserData = {
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerRight: {
-    width: 40, // 与 skip 按钮宽度相同，保持对称
+    width: 40, // 
   },
   logoImage: {
     width: 120,

@@ -62,9 +62,9 @@ export default function ResetPinPage() {
 
         try {
             setIsLoading(true);
-            const email = await AsyncStorage.getItem('email');
+            const userId = await AsyncStorage.getItem('user_id');
             
-            if (!email) {
+            if (!userId) {
                 setError('User not authenticated');
                 return;
             }
@@ -86,14 +86,26 @@ export default function ResetPinPage() {
                 return;
             }
 
+            // Log request details
+            console.log('\n=== Set Parent Password Request Info ===');
+            console.log('Request URL:', `${API_URL}/auth/set_parent_password`);
+            console.log('Request Method:', 'POST');
+            console.log('Request Headers:', {
+                'Content-Type': 'application/json'
+            });
+            console.log('Request Body:', JSON.stringify({
+                uid: parseInt(userId),
+                pin: pinString
+            }, null, 2));
+
             const response = await fetch(`${API_URL}/auth/set_parent_password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email,
-                    password: pinString
+                    uid: parseInt(userId),
+                    pin: pinString
                 }),
             });
 

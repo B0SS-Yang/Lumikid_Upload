@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useState } from 'react';
 import { API_URL } from '@/constants/API';
 
-// 定义用户凭证的数据结构
+// define the data structure of user credentials
 interface UserCredentials {
   email: string;
   password: string;
@@ -20,7 +20,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
 
-  // 注册用户的函数
+  // function to register a user
   const registerUser = async (userData: UserCredentials) => {
     try {
       console.log('API URL:', `${API_URL}/auth/register`);
@@ -34,13 +34,13 @@ export default function RegisterPage() {
         body: JSON.stringify(userData),
       });
 
-      // 检查响应状态
+      // check the response status
       if (!response.ok) {
         const errorData = await response.json();
         console.log('Error Response Status:', response.status);
         console.log('Error Response Data:', JSON.stringify(errorData, null, 2));
         
-        // 根据不同的错误类型返回不同的错误信息
+        // return different error messages based on different error types
         switch (response.status) {
           case 400:
             if (errorData.detail?.includes('email')) {
@@ -51,7 +51,7 @@ export default function RegisterPage() {
               throw new Error(errorData.detail || 'Request parameter error');
             }
           case 409:
-            // 检查是否是未验证的情况
+            // check if the error is due to unverified email
             console.log('409 Error Data:', JSON.stringify(errorData, null, 2));
             if (errorData.detail?.includes('not verified')) {
               Alert.alert('Email Already Registered', 'This email has already been registered. Please verify your email.', [
@@ -80,7 +80,7 @@ export default function RegisterPage() {
         }
       }
 
-      // 获取响应数据
+      // receive the response data
       const data = await response.json();
       console.log('Success Response Data:', JSON.stringify(data, null, 2));
       
@@ -116,7 +116,7 @@ export default function RegisterPage() {
     } catch (error: any) {
       console.log('Registration error:', error);
       
-      // 检查是否是未验证的错误
+      // check if the error is due to unverified email
       if (error.message?.includes('unverified') || error.message?.includes('not verified')) {
         Alert.alert('Verification Required', 'Please verify your email first.', [
           {

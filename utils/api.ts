@@ -3,9 +3,9 @@
 import axios from "axios";
 import { API_URL } from "@/constants/API";
 import { Int32 } from "react-native/Libraries/Types/CodegenTypes";
-// ========== 用户系统模块（main.py） ==========
+// ========== user system module (main.py) ==========
 const API_BASE = API_URL  ; // 
-const API_KEY = "cs46_learning_companion_secure_key_2024"; // ✅ 用作 x-api-key
+const API_KEY = "cs46_learning_companion_secure_key_2024"; // ✅ used as x-api-key
 const user_id = 1
 const client = axios.create({
   baseURL: API_BASE,
@@ -44,9 +44,9 @@ export const sendMessageToAssistant = (data: {
   context?: { role: string; content: string }[];
 }) => client.post("/conversations", data);
 
-// ========== ✅ 聊天模块（main_chat.py 服务：8001） ==========
+// ========== ✅ chat module (main_chat.py service: 8001) ==========
 
-const chatBaseUrl = API_BASE; // ✅ 聊天服务端口
+const chatBaseUrl = API_BASE; // ✅ chat service port
 
 export const sendMessageToAI = async (text: string, chatId: string, userId: Int32) => {
   const body = {
@@ -68,13 +68,13 @@ export const sendMessageToAI = async (text: string, chatId: string, userId: Int3
   });
 
   const responseData = await response.json();
-  console.log('📥 原始API响应:', responseData);
+  console.log('📥 original API response:', responseData);
   
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
   return responseData;
 };
 
-// ========== 📜 聊天记录：获取 conversation 历史 ==========
+// ========== 📜 chat history: get conversation history ==========
 export const getConversationHistory = async (conversation_id: string) => {
   const res = await axios.get(
     `${API_BASE}/conversation-history/${conversation_id}`,
@@ -87,7 +87,7 @@ export const getConversationHistory = async (conversation_id: string) => {
   return res.data; // { messages: [...], conversation_id: "..." }
 };
 
-// ========== 🔍 向量检索：关键词搜索（图书馆） ==========
+// ========== 🔍 vector search: keyword search (library) ==========
 export const vectorSearch = async (query: string, user_id = "test123") => {
   const res = await axios.post(
     `${API_BASE}/vector-search`,
@@ -107,7 +107,7 @@ export const vectorSearch = async (query: string, user_id = "test123") => {
   return res.data; 
 };
 
-// ========== 📦 离线内容同步接口 ==========
+// ========== 📦 offline content sync interface ==========
 export const syncOfflineContent = async (user_id: string, content_ids: string[], last_sync_time: string) => {
   const res = await axios.post(
     `${API_BASE}/offline-content-management`,
@@ -123,5 +123,5 @@ export const syncOfflineContent = async (user_id: string, content_ids: string[],
       },
     }
   );
-  return res.data; // 返回匹配内容
+  return res.data; // return matched content
 };

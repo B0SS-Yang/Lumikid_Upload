@@ -16,9 +16,16 @@ export default function ForgotPasswordPage() {
       Alert.alert('Error', 'Please enter your email address');
       return;
     }
-    setIsLoading(true);
+      setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/auth/forgot_password`, {
+      console.log('📤 Forgot password request:', {
+        url: `${API_URL}/auth/send_reset_code`,
+        method: 'POST',
+        email: email,
+        timestamp: new Date().toISOString()
+      });
+
+      const response = await fetch(`${API_URL}/auth/send_reset_code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -26,9 +33,19 @@ export default function ForgotPasswordPage() {
         },
         body: JSON.stringify({ email }),
       });
+
+      console.log('📥 Forgot password response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        timestamp: new Date().toISOString()
+      });
+
       const data = await response.json();
+      console.log('Response data:', data);
+
       if (response.ok) {
-        await AsyncStorage.setItem('pendingVerificationEmail', email);
+      await AsyncStorage.setItem('pendingVerificationEmail', email);
         Alert.alert('Success', 'Verification code has been sent to your email', [
           {
             text: 'OK',
@@ -36,10 +53,21 @@ export default function ForgotPasswordPage() {
           },
         ]);
       } else {
-        Alert.alert('Error', data.detail || 'Failed to send verification code');
+        // deal with different error cases
+        let errorMessage = 'Failed to send verification code';
+        if (response.status === 404) {
+          errorMessage = 'Email not found. Please check your email address.';
+        } else if (data.detail) {
+          errorMessage = data.detail;
+        }
+        Alert.alert('Error', errorMessage);
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to connect to server. Please try again later.');
+      console.error('Forgot password error:', err);
+      Alert.alert(
+        'Error',
+        'Failed to connect to server. Please check your network connection and try again.'
+      );
     } finally {
       setIsLoading(false);
     }

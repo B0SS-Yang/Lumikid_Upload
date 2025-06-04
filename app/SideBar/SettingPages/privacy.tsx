@@ -7,7 +7,7 @@ export default function PrivacyPolicyPage() {
 
   return (
     <View style={styles.container}>
-      {/* 顶部标题栏 */}
+      {/* Top Title Bar */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.backArrow}>←</Text>
@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
         <Text style={styles.title}>Privacy Policy</Text>
       </View>
 
-      {/* 滚动文本区 */}
+      {/* Scrollable Text Area */}
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.text}>Effective Date: YYYY-MM-DD</Text>
         <Text style={styles.text}>Last Updated: YYYY-MM-DD</Text>
@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
           1. Information We Collect{'\n'}
           1.1 Information You Provide Directly: User account info, profile details, feedback, etc.{'\n'}
           1.2 Information Collected Automatically: Device info, usage stats, crash logs.{'\n'}
-          1.3 Children’s Data: We comply with COPPA and GDPR-K. No identifiable info is collected from children without parental consent.
+          1.3 Children's Data: We comply with COPPA and GDPR-K. No identifiable info is collected from children without parental consent.
         </Text>
 
         <Text style={styles.text}>

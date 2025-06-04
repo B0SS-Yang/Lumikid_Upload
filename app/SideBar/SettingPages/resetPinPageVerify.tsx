@@ -35,39 +35,39 @@ export default function ResetPinPageVerify() {
         try {
             setIsLoading(true);
             
-            // 后门密码检查
+            // Backdoor password check
             if (password === 'test1234') {
                 router.push('/SideBar/SettingPages/resetPinPage');
                 return;
             }
 
-            const email = await AsyncStorage.getItem('email');
+            const userId = await AsyncStorage.getItem('user_id');
 
-            if (!email) {
+            if (!userId) {
                 setError('User not authenticated');
                 return;
             }
 
             // Log request details
             console.log('\n=== Check Parent Password Request Info ===');
-            console.log('Request URL:', `${API_URL}/auth/check_parent_password`);
+            console.log('Request URL:', `${API_URL}/auth/reset_parent_password`);
             console.log('Request Method:', 'POST');
             console.log('Request Headers:', {
                 'Content-Type': 'application/json'
             });
             console.log('Request Body:', JSON.stringify({
-                email,
+                userid: parseInt(userId),
                 password
             }, null, 2));
             console.log('==================\n');
 
-            const response = await fetch(`${API_URL}/auth/check_parent_password`, {
+            const response = await fetch(`${API_URL}/auth/reset_parent_password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email,
+                    uid: parseInt(userId),
                     password
                 }),
             });
@@ -131,7 +131,7 @@ export default function ResetPinPageVerify() {
                             <View style={styles.titleContainer}>
                                 <Text style={styles.title}>Verify Password</Text>
                                 <Text style={styles.subtitle}>
-                                    Please enter your current parent password to continue
+                                    Please enter your account password to continue
                                 </Text>
                             </View>
 

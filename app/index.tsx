@@ -41,23 +41,23 @@ export default function ChatPage() {
   const gameQuestion = params.gameQuestion ? decodeURIComponent(params.gameQuestion as string) : '';
   const gameAnswer = params.gameAnswer ? decodeURIComponent(params.gameAnswer as string) : '';
 
-  // 小游戏答题相关state
+  // small game answer related state
   const [gameActive, setGameActive] = useState(!!gameQuestion);
   const [currentGame, setCurrentGame] = useState<'math' | 'vocabulary' | 'grammar'>(
     gameType as 'math' | 'vocabulary' | 'grammar' || 'grammar'
   );
   const [currentGameAnswer, setCurrentGameAnswer] = useState(gameAnswer);
 
-  // 新增：是否等待继续/退出小游戏
+  // new: whether waiting for continue/exit small game
   const [waitingContinue, setWaitingContinue] = useState(false);
 
   useEffect(() => {
-    // 检查是否是家长模式
+    // check if it is parent mode
     if (mode === 'parent') {
       setIsParentMode(true);
       AsyncStorage.setItem('isParentMode', 'true');
     } else {
-      // 从存储中读取模式状态
+      // read the mode status from the storage
       AsyncStorage.getItem('isParentMode').then(value => {
         setIsParentMode(value === 'true');
       });
@@ -74,7 +74,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!chatId || isNaN(chatId)) {
-      console.warn("❌ chatId 无效:", id);
+      console.warn("❌ chatId is invalid:", id);
       return;
     }
   
@@ -85,15 +85,15 @@ export default function ChatPage() {
         });
   
         if (!res.ok) {
-          console.warn("无法获取聊天记录，状态码:", res.status);
+          console.warn("failed to get chat history, status code:", res.status);
           return;
         }
   
         const data = await res.json();
-        console.log("✅ 获取到的聊天数据:", data);
+        console.log("✅ get the chat data:", data);
   
         if (!data?.chat?.messages || !Array.isArray(data.chat.messages)) {
-          console.warn("⚠️ chat.messages 结构异常:", data.chat);
+          console.warn("⚠️ chat.messages structure is abnormal:", data.chat);
           return;
         }
   
@@ -151,13 +151,13 @@ export default function ChatPage() {
             },
             timestamp: new Date().toISOString()
           });
-          // ✅ 识别游戏开始或退出标志
+          // ✅ identify the game start or exit flag
           if (result.response?.toLowerCase().includes("next question")) {
-            setInGame(true); // 游戏继续中
+            setInGame(true); // game continues
           } else if (result.response?.toLowerCase().includes("exited the game")) {
-            setInGame(false); // 游戏结束
+            setInGame(false); // game ends
           } else if (result.response?.toLowerCase().includes("let's play")) {
-            setInGame(true); // 游戏启动
+            setInGame(true); // game starts
           }
   
           const botMessage: Message = {
@@ -178,10 +178,10 @@ export default function ChatPage() {
     }
   }, [preset]);  
   
-  // 新增：首次加载时将题目插入AI消息，并保存答案
+  // first load the question and save the answer
   useEffect(() => {
     if (gameQuestion && gameType) {
-      // 确保游戏类型是有效的
+      // ensure the game type is valid
       const validGameType = ['math', 'vocabulary', 'grammar'].includes(gameType) 
         ? gameType as 'math' | 'vocabulary' | 'grammar' 
         : 'grammar';
@@ -192,18 +192,18 @@ export default function ChatPage() {
         answer: gameAnswer
       });
 
-      // 根据游戏类型格式化问题
+      // format the question according to the game type
       let formattedQuestion = gameQuestion;
       switch (validGameType) {
         case 'grammar':
           formattedQuestion = formatGrammarQuestion(gameQuestion);
           break;
         case 'vocabulary':
-          // 确保词汇题包含选项
+          // ensure the vocabulary question contains options
           formattedQuestion = gameQuestion.includes('(') ? gameQuestion : `${gameQuestion} (${gameAnswer})`;
           break;
         case 'math':
-          // 数学题不需要特殊格式化
+          // math question does not need special formatting
           formattedQuestion = gameQuestion;
           break;
       }
@@ -221,7 +221,7 @@ export default function ChatPage() {
   const handleSend = async () => {
     if (!inputText.trim()) return;
 
-    // 1. 等待继续/退出小游戏状态
+    // 1. waiting for continue/exit small game status
     if (waitingContinue) {
       const userInput = inputText.trim().toLowerCase();
       setMessages(prev => [
@@ -230,7 +230,7 @@ export default function ChatPage() {
       ]);
       setInputText("");
       if (userInput === 'y') {
-        // 重新请求新题，确保使用相同的游戏类型
+        // request a new question, ensure using the same game type
         try {
           console.log(`🎮 Continuing ${currentGame} game...`);
           const res = await fetch(`${API_URL}/game/${currentGame}`, {
@@ -263,7 +263,7 @@ export default function ChatPage() {
             }
           }
 
-          // 根据游戏类型格式化问题
+          // format the question according to the game type
           let formattedQuestion = question;
           switch (currentGame) {
             case 'grammar':
@@ -273,7 +273,7 @@ export default function ChatPage() {
               formattedQuestion = question.includes('(') ? question : `${question} (${answer})`;
               break;
             case 'math':
-              formattedQuestion = question;  // 数学题不需要特殊格式化
+              formattedQuestion = question;  // math question does not need special formatting
               break;
           }
 
@@ -332,7 +332,7 @@ export default function ChatPage() {
       return;
     }
 
-    // 2. 小游戏答题优先处理
+    // 2. small game answer processing
     if (gameActive) {
       const userMessage = {
         id: Date.now().toString(),
@@ -342,7 +342,7 @@ export default function ChatPage() {
       setMessages(prev => [...prev, userMessage]);
       setInputText("");
 
-      // 检查是否要退出游戏
+      // check if exit the game
       if (inputText.toLowerCase() === 'quit') {
         setMessages(prev => [
           ...prev,
@@ -359,7 +359,7 @@ export default function ChatPage() {
         return;
       }
 
-      // 根据游戏类型验证答案
+      // verify the answer according to the game type
       const trimmedInput = inputText.trim().toLowerCase();
       let isCorrect = false;
       let errorMessage = '';
@@ -441,19 +441,19 @@ export default function ChatPage() {
         ]);
         setWaitingContinue(true);
       } else {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: Date.now().toString() + '_game_result',
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString() + '_game_result',
             text: 'Incorrect answer, please try again or type "quit" to exit.',
-            role: 'assistant' as 'assistant',
-          },
-        ]);
+          role: 'assistant' as 'assistant',
+        },
+      ]);
       }
       return;
     }
 
-    // 请求体日志
+    // request body log
     const requestBody = {
       id: chatId,
       user_id: userId ? parseInt(userId) : 1,
@@ -463,7 +463,7 @@ export default function ChatPage() {
       interests: ["books", "reading"],
     };
 
-    console.log('📤 API请求体:', {
+    console.log('📤 API request body:', {
       url: `${API_URL}/chat`,
       method: 'POST',
       headers: {
@@ -491,8 +491,8 @@ export default function ChatPage() {
         timestamp?: string;
       };
       
-      // 响应体日志
-      console.log('📥 API响应体:', {
+      // response body log
+      console.log('📥 API response body:', {
         status: 'success',
         data: {
           response: result.response,
@@ -507,7 +507,7 @@ export default function ChatPage() {
         if (match) {
           const score = parseInt(match[1], 10);
           const total = parseInt(match[2], 10);
-          console.log('🎯 游戏分数:', { score, total });
+          console.log('🎯 game score:', { score, total });
           setScoreInfo({ score, total });
         }
       } else {
@@ -523,9 +523,9 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, botMessage]);
       await AsyncStorage.setItem("last_conversation_id", result.conversation_id ?? "");
     } catch (err) {
-      // 错误日志
-      console.error('❌ API错误:', {
-        error: err instanceof Error ? err.message : '未知错误',
+      // error log
+      console.error('❌ API error:', {
+        error: err instanceof Error ? err.message : 'unknown error',
         request: requestBody,
         timestamp: new Date().toISOString()
       });
@@ -544,7 +544,7 @@ export default function ChatPage() {
 
   const renderItem = ({ item }: { item: Message }) => {
     const imageMatch = item.text.match(/\[image:(https?:\/\/[^\]]+)\]/);
-    const parts = item.text.split(/\[image:(https?:\/\/[^\]]+)\]/); // 分割文字和图片链接
+    const parts = item.text.split(/\[image:(https?:\/\/[^\]]+)\]/); // split text and image link
   
     return (
       <View style={[
@@ -602,7 +602,7 @@ export default function ChatPage() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 顶部区域 */}
+      {/* top area */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.headerIconLeft}
@@ -626,7 +626,7 @@ export default function ChatPage() {
         </TouchableOpacity>
       </View>
 
-      {/* 显示当前模式 */}
+      {/* show the current mode */}
       {isParentMode && (
         <View style={styles.modeIndicator}>
           <Text style={styles.modeText}>Parent Mode</Text>
@@ -643,7 +643,7 @@ export default function ChatPage() {
       )}
 
 
-      {/* 聊天内容 */}
+      {/* chat content */}
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -700,7 +700,7 @@ export default function ChatPage() {
         </>
       )}
 
-      {/* 输入区 */}
+      {/* input area */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={90}
@@ -729,11 +729,11 @@ export default function ChatPage() {
 }
 
 function formatGrammarQuestion(raw: string) {
-  // 匹配 a) b) c) 及其后内容
+  // match a) b) c) and its content
   const optionRegex = /(a\)[^b|c]*)(b\)[^c]*)(c\).*)/i;
   const match = raw.match(optionRegex);
   if (match) {
-    // 题干 + 换行 + 每个选项单独一行
+    // stem + newline + each option in a line
     const [_, a, b, c] = match;
     const stem = raw.split(/a\)/i)[0].trim();
     return `${stem}\n${a.trim()}\n${b.trim()}\n${c.trim()}`;

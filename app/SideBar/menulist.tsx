@@ -52,7 +52,7 @@ const fetchAndSaveAllChatHistory = async (userId: string) => {
       await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(chatHistory, null, 2));
     }
   } catch (err) {
-    console.error('拉取或保存聊天历史失败:', err);
+    console.error('failed to fetch or save chat history:', err);
   }
 };
 
@@ -61,7 +61,7 @@ export default function FeaturePage() {
   const {id} = useLocalSearchParams();
   const chatId = parseInt(id as string, 10);
 
-  // ——— 1. 动态拿 user_id ———
+  // ——— 1. dynamic get user_id ———
   const [userId, setUserId] = useState<number | null>(null);
   useEffect(() => {
     (async () => {
@@ -82,13 +82,13 @@ export default function FeaturePage() {
     })();
   }, [userId]);
 
-  // ——— 2. 确认 AI Chatting / Digital Library 弹窗 ———
+  // ——— 2. confirm AI Chatting / Digital Library popup ———
   const [confirmingFeature, setConfirmingFeature] = useState<Feature | null>(null);
 
-  // ——— 3. 教育模块（小游戏）选择弹窗 ———
+  // ——— 3. education module (small game) selection popup ———
   const [gameModalVisible, setGameModalVisible] = useState(false);
 
-  // ——— 4. 侧边栏滑入动画 ———
+  // ——— 4. sidebar slide in animation ———
   const slideAnim = useRef(new Animated.Value(width)).current;
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -98,13 +98,13 @@ export default function FeaturePage() {
     }).start();
   }, []);
 
-  // ——— 5. 模式切换相关状态 ———
+  // ——— 5. mode switch related states ———
   const [isParentMode, setIsParentMode] = useState(false);
   const [pinModalVisible, setPinModalVisible] = useState(false);
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
 
-  // 加载当前模式
+  // load the current mode
   useEffect(() => {
     const loadMode = async () => {
       const mode = await AsyncStorage.getItem('isParentMode');
@@ -113,62 +113,49 @@ export default function FeaturePage() {
     loadMode();
   }, []);
 
-  // 处理模式切换
+  // handle mode switch
   const handleModeToggle = async () => {
     if (!isParentMode) {
-      // 切换到家长模式，显示PIN码输入框
+      // switch to parent mode, show the PIN code input box
       setPinModalVisible(true);
     } else {
-      // 切换到儿童模式，直接切换
+      // switch to child mode, directly switch
       await AsyncStorage.setItem('isParentMode', 'false');
       setIsParentMode(false);
       router.replace('/');
     }
   };
 
-  // 处理PIN码验证
+  // handle PIN code verification
   const handlePinSubmit = async () => {
-    // 保留测试后门
-    if (pin === '1111') {
-      await AsyncStorage.setItem('isParentMode', 'true');
-      setIsParentMode(true);
-      setPinModalVisible(false);
-      setPin('');
-      setPinError('');
-      router.replace('/');
-      return;
-    }
-
-    // 验证PIN码长度
-    if (pin.length !== 4) {
-      setPinError('PIN code must be 4 digits');
-      return;
-    }
-
-    // 验证是否为纯数字
-    if (!/^\d{4}$/.test(pin)) {
-      setPinError('PIN code must contain only numbers');
-      return;
-    }
-
     try {
       const userId = await AsyncStorage.getItem('user_id');
-      const userEmail = await AsyncStorage.getItem('user_email');
       
-      if (!userEmail) {
+      if (!userId) {
         setPinError('Please login first');
         return;
       }
+
+      // Log request details
+      console.log('\n=== Check Parent Password Request Info ===');
+      console.log('Request URL:', `${API_URL}/auth/check_parent_password`);
+      console.log('Request Method:', 'POST');
+      console.log('Request Headers:', {
+        'Content-Type': 'application/json'
+      });
+      console.log('Request Body:', JSON.stringify({
+        uid: parseInt(userId),
+        pin: pin
+      }, null, 2));
 
       const response = await fetch(`${API_URL}/auth/check_parent_password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': 'cs46_learning_companion_secure_key_2024',
         },
         body: JSON.stringify({
-          email: userEmail,
-          password: pin
+          uid: parseInt(userId),
+          pin: pin
         })
       });
 
@@ -190,7 +177,7 @@ export default function FeaturePage() {
     }
   };
 
-  // 点击遮罩或空白区域，滑出并返回
+  // click the mask or blank area, slide out and return
   const handleBackToChat = () => {
     Animated.timing(slideAnim, {
       toValue: width,
@@ -201,7 +188,7 @@ export default function FeaturePage() {
     });
   };
 
-  // 功能按钮点击：AI Chatting / Library 先弹确认，Modules 直接弹小游戏列表
+  // feature button click: AI Chatting / Library first pop up confirm, Modules directly pop up small game list
   const handlePressFeature = (feature: Feature) => {
     if (feature.id === 'modules') {
       setGameModalVisible(true);
@@ -212,7 +199,7 @@ export default function FeaturePage() {
     }
   };
 
-  // 取消所有弹窗
+  // cancel all popups
   const handleCancel = () => {
     setConfirmingFeature(null);
     setGameModalVisible(false);
@@ -221,7 +208,7 @@ export default function FeaturePage() {
     setPinError('');
   };
 
-  // 确认 AI Chatting（发送 exit_game）
+  // confirm AI Chatting (send exit_game)
   const handleConfirm = async () => {
     if (!confirmingFeature || userId === null) return;
 
@@ -251,7 +238,7 @@ export default function FeaturePage() {
     setConfirmingFeature(null);
   };
 
-  // 启动小游戏：指向 /game/:type 而非 /chat
+  // start small game: point to /game/:type instead of /chat
   const startGame = async (type: 'math' | 'vocabulary' | 'grammar') => {
     if (!userId) return;
     try {
@@ -277,8 +264,8 @@ export default function FeaturePage() {
         [question, answer] = data;
       } else if (typeof data === 'object') {
         if (data.Question && data.Answer) {
-          question = data.Question;
-          answer = data.Answer;
+        question = data.Question;
+        answer = data.Answer;
         } else {
           console.error('Unexpected data format:', data);
           throw new Error('Invalid game data format');
@@ -291,7 +278,7 @@ export default function FeaturePage() {
         answer
       });
 
-      // 跳转到首页并传递题目信息
+      // jump to home page and pass the question information
       router.push({
         pathname: '/',
         params: {
@@ -303,7 +290,7 @@ export default function FeaturePage() {
       });
     } catch (err) {
       console.error('❌ Game initialization error:', err);
-      Alert.alert('启动失败', err instanceof Error ? err.message : '未知错误');
+      Alert.alert('Failed to start', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setGameModalVisible(false);
     }
@@ -329,7 +316,7 @@ export default function FeaturePage() {
             </TouchableOpacity>
           ))}
 
-          {/* 订阅按钮 - 仅在家长模式下显示 */}
+          {/* subscribe button - only show in parent mode */}
           {isParentMode && (
             <TouchableOpacity
               style={styles.subscribeButton}
@@ -339,7 +326,7 @@ export default function FeaturePage() {
             </TouchableOpacity>
           )}
 
-          {/* 模式切换按钮 */}
+          {/* mode switch button */}
           <View style={styles.modeSwitchContainer}>
             <TouchableOpacity
               style={[
@@ -355,7 +342,7 @@ export default function FeaturePage() {
           </View>
         </Animated.View>
 
-        {/* 确认弹窗：退出游戏 / 进入图书馆 */}
+        {/* confirm popup: exit game / enter library */}
         {confirmingFeature && (
           <Modal transparent animationType="fade">
             <View style={styles.modalBackground}>
@@ -376,7 +363,7 @@ export default function FeaturePage() {
           </Modal>
         )}
 
-        {/* 教育模块：小游戏列表弹窗 */}
+        {/* education module: small game list popup */}
         <Modal visible={gameModalVisible} transparent animationType="fade">
           <TouchableWithoutFeedback onPress={handleCancel}>
             <View style={styles.modalContainer}>
@@ -415,7 +402,7 @@ export default function FeaturePage() {
           </TouchableWithoutFeedback>
         </Modal>
 
-        {/* PIN码验证弹窗 */}
+        {/* PIN code verification popup */}
         <Modal visible={pinModalVisible} transparent animationType="fade">
           <View style={styles.modalBackground}>
             <View style={styles.modalBox}>
@@ -424,7 +411,7 @@ export default function FeaturePage() {
                 style={styles.pinInput}
                 value={pin}
                 onChangeText={(text) => {
-                  // 限制只能输入数字且最多4位
+                  // limit to input numbers and at most 4 digits
                   if (/^\d{0,4}$/.test(text)) {
                     setPin(text);
                     setPinError('');
@@ -543,16 +530,16 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 15,
-    fontSize: 16,  // 调整为标准字体大小
-    textAlign: 'left', // 左对齐，与其他输入框保持一致
+    fontSize: 16,  
+    textAlign: 'left', 
     marginTop: 10,
-    letterSpacing: 1,  // 调整字符间距为标准间距
+    letterSpacing: 1,  
   },
   pinError: {
     color: '#FF3B30',
     marginTop: 10,
     fontSize: 14,
-    textAlign: 'center',  // 居中显示错误信息
+    textAlign: 'center', 
   },
   subscribeButton: {
     backgroundColor: '#FF9500',

@@ -57,7 +57,7 @@ export default function MenuPage() {
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const [isVisible, setIsVisible] = useState(true);
 
-  // —— 动态 userId —— 
+  // ——  dynamic userId —— 
   const [userId, setUserId] = useState<number | null>(null);
   useEffect(() => {
     (async () => {
@@ -86,7 +86,7 @@ export default function MenuPage() {
     }).start();
   }, []);
 
-    // 点击遮罩区域，侧边栏收回并返回上一个页面
+  // click the mask area, the sidebar will be closed and return to the previous page
   const handleBackToChat = () => {
     Animated.timing(slideAnim, {
       toValue: -width,
@@ -99,7 +99,7 @@ export default function MenuPage() {
   };
 
   const refreshChats = async () => {
-    if (userId === null) return; // 等待 userId 载入
+    if (userId === null) return; // wait for userId loading
     setRefreshing(true);
     try {
       const chatsFromServer = await fetchChatsFromServer(userId);  // :contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
@@ -114,7 +114,7 @@ export default function MenuPage() {
     }
   };
 
-  // 拿到 userId 后首次拉列表
+  // get userId and refresh the list
   useEffect(() => {
     if (userId !== null) {
       refreshChats();

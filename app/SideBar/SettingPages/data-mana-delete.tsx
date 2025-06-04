@@ -8,10 +8,10 @@ export default function ConfirmDeletePage() {
 
   const handleDelete = async () => {
     try {
-      // 清空所有聊天记录（示例：清除 chatHistory 项）
+      // clear all chat history (example: remove chatHistory item)
       await AsyncStorage.removeItem('chatHistory');
       Alert.alert('Success', 'All chat history deleted.');
-      router.replace('/SideBar/SettingPages/data-management'); // 或 router.back();
+      router.replace('/SideBar/SettingPages/data-management'); // or router.back();
     } catch (e) {
       Alert.alert('Error', 'Failed to delete history.');
     }
@@ -26,14 +26,14 @@ export default function ConfirmDeletePage() {
         <Text style={styles.title}>Data Management</Text>
       </View>
 
-      {/* 提示语句 */}
+      {/* prompt */}
       <View style={styles.confirmBox}>
         <Text style={styles.confirmText}>
           Are you sure to delete{'\n'}all chat history?
         </Text>
       </View>
 
-      {/* 底部按钮 */}
+      {/* bottom button */}
       <View style={styles.buttonRow}>
         <Pressable style={styles.button} onPress={handleDelete}>
           <Text style={styles.redText}>Yes</Text>
@@ -49,7 +49,7 @@ export default function ConfirmDeletePage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ccc', // 灰色背景区域
+    backgroundColor: '#ccc', 
     paddingTop: 60,
     paddingHorizontal: 24,
     borderTopLeftRadius: 40,

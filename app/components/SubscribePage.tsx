@@ -80,14 +80,14 @@ export default function SubscribePage() {
 
   const handleSubscribe = async () => {
     try {
-      // 1. 获取 token
+      // 1. get the token
       const token = await AsyncStorage.getItem('token');
       if (!token) {
-        Alert.alert('Error', '请先登录');
+        Alert.alert('Error', 'Please login first');
         return;
       }
 
-      // 2. 组装请求体
+      // 2. assemble the request body
       const requestBody = {
         token,
         plan: 'Pro',
@@ -96,12 +96,12 @@ export default function SubscribePage() {
         renew_method: 'credit_card',
       };
 
-      // 输出请求体和请求url
-      console.log('【DEBUG】订阅请求:');
-      console.log('请求URL:', `${API_URL}/payment/purchase`);
-      console.log('请求体:', JSON.stringify(requestBody));
+      // print the request body and request url
+      console.log('[DEBUG] Subscription Request:');
+      console.log('Request URL:', `${API_URL}/payment/purchase`);
+      console.log('Request Body:', JSON.stringify(requestBody));
 
-      // 3. 调用后端API
+      // 3. call the backend API
       const response = await fetch(`${API_URL}/payment/purchase`, {
         method: 'POST',
         headers: {
@@ -112,21 +112,21 @@ export default function SubscribePage() {
 
       const data = await response.json();
 
-      // 输出后端返回体
-      console.log('【DEBUG】后端返回:', data);
+      // print the backend response
+      console.log('[DEBUG] Backend Response:', data);
 
       if (response.ok && data.checkout_url) {
-        Alert.alert('即将跳转', '请在新页面完成支付', [
+        Alert.alert('Redirecting', 'Please complete the payment on the next page', [
           {
-            text: '确定',
+            text: 'OK',
             onPress: () => Linking.openURL(data.checkout_url),
           },
         ]);
       } else {
-        Alert.alert('订阅失败', data.detail || '请稍后重试');
+        Alert.alert('Subscription Failed', data.detail || 'Please try again later');
       }
     } catch (err) {
-      Alert.alert('订阅失败', err instanceof Error ? err.message : '请稍后重试');
+      Alert.alert('Subscription Failed', err instanceof Error ? err.message : 'Please try again later');
     }
   };
 
